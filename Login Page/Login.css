@@ -1,0 +1,16 @@
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.45 system-ui,sans-serif;color:#222;background:#fff}
+main{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px}
+.card{width:100%;max-width:340px;border:1px solid #999;background:#fafafa;padding:24px;display:flex;flex-direction:column;gap:8px}
+.logo{height:70px;background:#e4e4e4;border:1px dashed #888;display:flex;align-items:center;justify-content:center;color:#444}
+.logo img{max-height:100%}
+h1{font-size:18px;margin:8px 0 4px}
+label{font-size:12px;color:#444;margin-top:4px}
+input{width:100%;font:inherit;padding:9px;border:1px solid #999;background:#fff}
+.go{margin-top:6px;padding:10px;border:0;background:#333;color:#fff;font:600 14px system-ui,sans-serif;cursor:pointer}
+.go:hover{background:#111}
+input:focus-visible,.go:focus-visible,summary:focus-visible{outline:3px solid #d9921a;outline-offset:2px}
+.err{color:#a43a2a;min-height:20px;margin:2px 0 0}
+.notice{background:#eee;border:1px solid #333;padding:8px;margin:0}
+.note{font-size:11px;color:#444;margin:4px 0 0}
+details{font-size:12px;color:#444;max-width:340px;width:100%}summary{cursor:pointer}

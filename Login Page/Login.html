@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Log in | Brews &amp; Blessings Cafe</title>
+<link rel="stylesheet" href="login.css">
+</head>
+<body>
+<main>
+  <form id="lf" class="card" novalidate>
+    <!-- Replace this box with your logo: <img src="logo.png" alt="Brews &amp; Blessings Cafe"> -->
+    <div class="logo">Logo</div>
+    <h1>Brews &amp; Blessings Cafe</h1>
+    <p id="notice" class="notice" role="status" hidden></p>
+    <label for="u">Username</label>
+    <input id="u" name="u" autocomplete="username" autofocus>
+    <label for="p">Password</label>
+    <input id="p" name="p" type="password" autocomplete="current-password">
+    <p id="err" class="err" role="alert"></p>
+    <button class="go">Log in</button>
+    <p class="note">Role-based access: Owner/Manager or POS User (Barista). Auto-logout after inactivity. Logins are recorded in the audit log.</p>
+  </form>
+  <details>
+    <summary>Demo accounts (remove before real use)</summary>
+    <p>Owner: <code>owner</code> / <code>owner123</code><br>Barista: <code>barista</code> / <code>barista123</code></p>
+  </details>
+</main>
+<script src="login.js"></script>
+</body>
+</html>
