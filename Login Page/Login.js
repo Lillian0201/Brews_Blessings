@@ -3,19 +3,23 @@ const DEMO = [
   {u:'owner', p:'owner123', name:'Owner', role:'Owner'},
   {u:'barista', p:'barista123', name:'Barista', role:'Barista'}
 ];
+const card = document.getElementById('lf'), btn = card.querySelector('.go');
 const form = document.getElementById('lf'), err = document.getElementById('err'), note = document.getElementById('notice'), pw = form.p;
 
-if (sessionStorage.me) location.replace('index.html'); // already logged in
+if (sessionStorage.me) location.replace('Login.html'); // already logged in
 
 const msg = sessionStorage.notice;
 if (msg) { note.textContent = msg; note.hidden = false; sessionStorage.removeItem('notice'); }
+
+// Shake the card when a login fails.
+const fail = text => { err.textContent = text; card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); };
 
 form.addEventListener('submit', e => {
   e.preventDefault();
   const u = form.u.value.trim(), p = pw.value;
   err.textContent = '';
   if (!u || !p) {
-    err.textContent = !u ? 'Enter your username.' : 'Enter your password.';
+    fail(!u ? 'Enter your username.' : 'Enter your password.');
     (!u ? form.u : pw).focus();
     return;
   }
@@ -23,7 +27,7 @@ form.addEventListener('submit', e => {
   try { db = JSON.parse(localStorage.bb || 'null'); } catch (x) {}
   const acct = (db ? db.users : DEMO).find(x => x.u == u && x.p == p);
   if (!acct) {
-    err.textContent = 'Wrong username or password. Check both and try again.';
+    fail('Wrong username or password. Check both and try again.');
     pw.value = ''; pw.focus();
     return;
   }
@@ -33,5 +37,6 @@ form.addEventListener('submit', e => {
     db.audit.unshift({t:new Date().toLocaleString(), u:acct.name, a:'Logged in', tbl:'USER'});
     localStorage.bb = JSON.stringify(db);
   }
-  location.href = 'index.html';
+  btn.disabled = true; btn.textContent = 'Logging in...';
+  setTimeout(() => location.href = 'Login.html', 450);
 });
