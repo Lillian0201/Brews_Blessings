@@ -1,0 +1,50 @@
+:root{--side:#3b2518;--brown:#9a5c2c;--bg:#f6ede1;--card:#fffaf1;--line:#e3d2b8;--ink:#2a1b12;--mut:#6a5444}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.45 system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+h1,h2,.k b,.big,.brandbox{font-family:Georgia,serif}
+h1{font-size:28px;margin:0}h2{font-size:16px;margin:0 0 10px}
+.shell{display:flex;min-height:100vh}
+.side{width:220px;flex-shrink:0;background:var(--side);color:#f3e6d6;padding:16px 12px;display:flex;flex-direction:column;gap:4px}
+.brandbox{display:flex;align-items:center;gap:10px;font-weight:700;font-size:14px;padding:4px 6px 18px}
+.brandbox img{width:36px;height:36px;border-radius:50%;background:#fff;object-fit:cover}
+.side nav,.foot{display:flex;flex-direction:column;gap:4px}.side nav{flex:1}
+.side button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:0;background:none;color:inherit;padding:10px;margin:0;border-radius:6px;cursor:pointer;transition:background .2s}
+.side button:hover{background:rgba(255,255,255,.12)}
+.side button.on{background:var(--brown);color:#fff}
+.ic{width:16px;height:16px;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+main{flex:1;min-width:0;padding:24px 28px}
+.top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:18px}
+.meta{display:flex;align-items:center;flex-wrap:wrap;gap:12px;font-size:13px}
+.pill{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:4px 14px}
+button,select,input{font:inherit;color:var(--ink)}
+button{border:1px solid var(--brown);background:var(--card);padding:7px 12px;border-radius:6px;cursor:pointer;margin:2px;transition:background .2s}
+button:hover{background:#f1e2cb}
+button.pr{background:var(--brown);color:#fff}button.pr:hover{background:#7f4a21}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--brown);outline-offset:1px}
+.side button:focus-visible{outline-color:#fff}
+input,select{border:1px solid #a88d72;border-radius:6px;padding:8px;background:#fff;width:100%}
+.fm{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;align-items:end;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:16px}
+label{display:flex;flex-direction:column;gap:4px;font-size:13px}
+.tw{overflow-x:auto}table{border-collapse:collapse;width:100%;background:var(--card)}
+th,td{border-bottom:1px solid var(--line);padding:9px 10px;text-align:left;vertical-align:top}
+th{background:#efe2cf;font-size:13px}td select{width:auto}.empty{color:var(--mut);margin:6px 0}
+.kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:16px}
+.k,.box{background:var(--card);border:1px solid var(--line);border-radius:10px}
+.k{padding:14px 16px}.k span{display:block;font-size:13px;color:var(--mut)}.k b{display:block;font-size:30px;margin-top:4px}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;margin-bottom:16px}
+.box{padding:16px;margin-bottom:16px}.two .box{margin-bottom:0}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.pills span{border:1px solid var(--line);border-radius:16px;padding:4px 14px;background:#fff}
+.list{list-style:none;margin:0;padding:0}
+.list li{display:flex;justify-content:space-between;align-items:center;gap:12px;border-top:1px solid var(--line);padding:10px 0}
+.list li span:first-child{flex:1}
+.tag{display:inline-block;min-width:84px;text-align:center;border-radius:12px;padding:2px 14px;font-size:12px;font-weight:700;background:#efe2cf}
+.tag.pend{background:#f7e3a8;color:#5c4300}.tag.ok{background:#d9ead3;color:#2a5226}.tag.bad{background:#f4cfcc;color:#8a2f2a}
+.bs{margin-bottom:12px}
+.bar{height:12px;border:1px solid var(--line);border-radius:8px;background:#fff;overflow:hidden;margin-top:3px}
+.bar i{display:block;height:100%;background:var(--brown);border-radius:8px;animation:grow .7s ease-out both}
+@keyframes grow{from{width:0!important}}
+.warn{background:#f7e3a8;border:1px solid #c99a2e;border-radius:6px;padding:9px 12px;margin-bottom:14px}
+.big{font-size:30px;margin:4px 0}
+@media(max-width:760px){.shell{flex-direction:column}.side{width:auto}.side nav,.foot{flex-direction:row;flex-wrap:wrap}.side button{width:auto}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
