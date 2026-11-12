@@ -1,73 +1,42 @@
+// Brews & Blessings Cafe - Dashboard page.
+// Navigation bar, login check and auto-logout come from nav.js (shared with the POS page).
+// Orders are read from the POS page's saved orders; stock and expenses from the 'bb' data.
 
-// Brews & Blessings Cafe - front-end prototype.
-// Data is saved in this browser (localStorage).
+const me = BBNav.requireLogin();
 
-
-const LOGIN_URL = '../Login Page/Login.html';
-const DASHBOARD_URL = 'Dashboard.html';
-
-// Safely retrieve the logged-in user.
-function getSessionUser() {
-  try {
-    return JSON.parse(sessionStorage.getItem('me') || 'null');
-  } catch (error) {
-    console.error('Session loading error:', error);
-    sessionStorage.removeItem('me');
-    return null;
-  }
+// Only roles that have "Dashboard" in their menu may stay on this page.
+if (me && !BBNav.canSee(me.role, 'dash')) {
+  location.replace(BBNav.homeFor(me.role));
 }
-
-let me = getSessionUser();
 
 console.log('1. Dashboard.js loaded');
 console.log('2. Logged-in user:', me);
 
-if (!me) {
-  location.replace(LOGIN_URL);
-}
-
-function logout() {
-  sessionStorage.removeItem('me');
-  location.href = LOGIN_URL;
-}
-
-const IDLE_MS = 10 * 60 * 1000; // auto-logout after inactivity
 const $ = s => document.querySelector(s);
 const money = n => '₱' + (+n).toLocaleString('en-US', {
   minimumFractionDigits: Number.isInteger(+n) ? 0 : 2,
   maximumFractionDigits: 2
 });
-const day = () => new Date().toISOString().slice(0, 10);
+const pad = n => String(n).padStart(2, '0');
+// Today's date in the local time zone, as YYYY-MM-DD.
+const dayOf = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+const day = () => dayOf(new Date());
 const esc = s => String(s).replace(/[&<>"']/g, c => '&#' + c.charCodeAt(0) + ';');
 const sum = (a, k) => a.reduce((s, x) => s + (+x[k] || 0), 0);
 
+// ---------- Saved data ----------
+// Stock (ings) and expenses (exps) live in localStorage under 'bb'.
+// This page only reads it; it never writes it back.
 const seed = () => ({
-  users: [
-    {u:'owner',p:'owner123',name:'Owner',role:'Owner'},
-    {u:'barista',p:'barista123',name:'Barista',role:'Barista'}
-  ],
   ings: [
     {id:1,name:'Espresso beans',unit:'g',stock:5000,begin:5000,inn:0,out:0,reorder:1000,cost:1},
     {id:2,name:'Fresh milk',unit:'ml',stock:10000,begin:10000,inn:0,out:0,reorder:2000,cost:.08},
     {id:3,name:'Cups',unit:'pcs',stock:200,begin:200,inn:0,out:0,reorder:30,cost:4},
     {id:4,name:'Caramel syrup',unit:'ml',stock:1000,begin:1000,inn:0,out:0,reorder:200,cost:.3}
   ],
-  prods: [
-    {id:1,name:'Americano',price:90,pack:2,rec:{1:18,3:1}},
-    {id:2,name:'Cafe Latte',price:120,pack:2,rec:{1:18,2:200,3:1}},
-    {id:3,name:'Caramel Latte',price:140,pack:2,rec:{1:18,2:200,3:1,4:20}}
-  ],
-  orders: [],
-  sales: [],
-  exps: [],
-  refunds: [],
-  audit: [],
-  seq: 1,
-  duty: ''
+  exps: []
 });
 
-// Safely load saved dashboard data.
-// Existing records are retained whenever the saved data is valid.
 let dbWarning = '';
 
 function loadDatabase() {
@@ -87,18 +56,8 @@ function loadDatabase() {
     const defaults = seed();
 
     return {
-      ...defaults,
-      ...saved,
-      users: Array.isArray(saved.users) ? saved.users : defaults.users,
       ings: Array.isArray(saved.ings) ? saved.ings : defaults.ings,
-      prods: Array.isArray(saved.prods) ? saved.prods : defaults.prods,
-      orders: Array.isArray(saved.orders) ? saved.orders : defaults.orders,
-      sales: Array.isArray(saved.sales) ? saved.sales : defaults.sales,
-      exps: Array.isArray(saved.exps) ? saved.exps : defaults.exps,
-      refunds: Array.isArray(saved.refunds) ? saved.refunds : defaults.refunds,
-      audit: Array.isArray(saved.audit) ? saved.audit : defaults.audit,
-      seq: Number.isFinite(Number(saved.seq)) ? Number(saved.seq) : defaults.seq,
-      duty: saved.duty || ''
+      exps: Array.isArray(saved.exps) ? saved.exps : defaults.exps
     };
 
   } catch (error) {
@@ -119,22 +78,18 @@ function loadDatabase() {
   }
 }
 
-let db = loadDatabase();
+// Orders placed on the POS page (same key the POS page saves to).
+const POS_KEY = 'bb_pos_orders_v1';
 
-console.log('3. Database loaded:', db);
-
-let view = '';
-let idle;
-let msg = '';
-
-const save = () => {
+function loadPosOrders() {
   try {
-    localStorage.setItem('bb', JSON.stringify(db));
+    const arr = JSON.parse(localStorage.getItem(POS_KEY) || '[]');
+    return Array.isArray(arr) ? arr : [];
   } catch (error) {
-    console.error('Could not save dashboard data:', error);
-    alert('Unable to save dashboard data. Check your browser storage.');
+    console.error('Could not read POS orders:', error);
+    return [];
   }
-};
+}
 
 const st = i => i.stock <= 0
   ? 'Out-of-Stock'
@@ -142,350 +97,99 @@ const st = i => i.stock <= 0
     ? 'Low-Stock'
     : 'Available';
 
-const log = (a, t) => {
-  db.audit.unshift({
-    t: new Date().toLocaleString(),
-    u: me.name,
-    a,
-    tbl: t
-  });
-  save();
-};
-
-const P = id => db.prods.find(p => p.id == id);
-const G = id => db.ings.find(g => g.id == id);
-
-const pcost = p => p.pack +
-  Object.entries(p.rec).reduce((s, [i, q]) => s + q * G(i).cost, 0);
-
-// Deduct (sign 1) or restore (sign -1) ingredients used by an order.
-const use = (o, sign) => {
-  for (const [i, q] of Object.entries(P(o.pid).rec)) {
-    const g = G(i);
-    const d = sign * q * o.qty;
-    g.stock -= d;
-    g.out += d;
-  }
-};
-
-const NAV = {
-  Owner: [
-    ['dash','Dashboard'],
-    ['orders','Order/POS'],
-    ['inv','Inventory'],
-    ['tx','Transactions'],
-    ['exp','Expense and Costing'],
-    ['pnl','Profit/Loss Report'],
-    ['audit','Audit log'],
-    ['settings','Settings (Owner)']
-  ],
-  Barista: [
-    ['orders','Order/POS'],
-    ['inv','Inventory']
-  ]
-};
-
-const ICON = {
-  dash:'<path d="M3 11l9-8 9 8v10H3z"/>',
-  orders:'<rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/>',
-  inv:'<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 10h8M8 14h8"/>',
-  tx:'<path d="M4 9h16l-4-4M20 15H4l4 4"/>',
-  exp:'<path d="M4 4h8l8 8-8 8-8-8z"/><circle cx="8.5" cy="8.5" r="1"/>',
-  pnl:'<rect x="4" y="4" width="16" height="16"/><path d="M10 4v16M15 4v16"/>',
-  audit:'<circle cx="12" cy="12" r="8"/><path d="M12 8v5l3 2"/>',
-  settings:'<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/>',
-  out:'<path d="M10 4H5v16h5M15 8l4 4-4 4M19 12H9"/>',
-  bell:'<path d="M6 16v-5a6 6 0 0112 0v5l2 2H4zM10 20a2 2 0 004 0"/>'
-};
-
-const ico = n =>
-  `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICON[n]}</svg>`;
-
-const tb = (h, r) =>
-  '<div class="tw"><table><tr>' +
-  h.map(x => `<th>${x}</th>`).join('') +
-  '</tr>' +
-  (r.length
-    ? r.map(x => '<tr>' + x.map(c => `<td>${c}</td>`).join('') + '</tr>').join('')
-    : `<tr><td colspan="${h.length}" class="empty">Nothing here yet.</td></tr>`) +
-  '</table></div>';
-
 const k = (l, v) =>
   `<div class="k"><span>${l}</span><b>${v}</b></div>`;
 
-const alerts = () => {
-  const a = db.ings.filter(i => st(i) != 'Available');
+// ---------- Dashboard view ----------
+function dashboardHTML(db) {
+  const t = day();
+  const all = loadPosOrders();
+  const today = all.filter(o => dayOf(new Date(o.createdAt)) == t);
 
-  return a.length
-    ? '<div class="warn"><b>Restock needed:</b> ' +
-      a.map(i => `${esc(i.name)} (${st(i)})`).join(', ') +
-      '</div>'
-    : '';
-};
+  // Payment is taken when an order is placed, so every order that is not cancelled counts as a sale.
+  const sold = o => o.status != 'Cancelled';
 
-const done = () => db.sales.filter(x => x.status == 'Completed');
-
-const V = {
-
-  dash() {
-    const t = day();
-    const o = db.orders.filter(x => x.date == t);
-    const best = {};
-
-    done().forEach(x => {
-      best[x.pn] = (best[x.pn] || 0) + x.qty;
+  const best = {};
+  all.filter(sold).forEach(o => {
+    (o.items || []).forEach(i => {
+      best[i.name] = (best[i.name] || 0) + (+i.qty || 0);
     });
+  });
 
-    const top = Object.entries(best)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3);
+  const top = Object.entries(best)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3);
 
-    const max = top.length ? top[0][1] : 1;
-    const c = (...s) => o.filter(x => s.includes(x.status)).length;
-    const low = db.ings.filter(i => st(i) != 'Available');
+  const max = top.length ? top[0][1] : 1;
+  const c = s => today.filter(o => o.status == s).length;
+  const low = db.ings.filter(i => st(i) != 'Available');
 
-    const cls = {
-      Pending:'pend',
-      Preparing:'pend',
-      Completed:'ok',
-      Cancelled:'bad'
-    };
+  const cls = {
+    Pending:'pend',
+    Completed:'ok',
+    Cancelled:'bad'
+  };
 
-    return `<div class="kp">
-      ${k("Today's sales", money(sum(done().filter(x => x.date == t), 'total')))}
-      ${k('Number of orders', o.length)}
-      ${k("Today's expenses", money(sum(db.exps.filter(x => x.date == t), 'amt')))}
-      ${k('Available stock', db.ings.filter(i => st(i) == 'Available').length + ' items')}
-    </div>
+  return `<div class="kp">
+    ${k("Today's sales", money(sum(today.filter(sold), 'total')))}
+    ${k('Number of orders', today.length)}
+    ${k("Today's expenses", money(sum(db.exps.filter(x => x.date == t), 'amt')))}
+    ${k('Available stock', db.ings.filter(i => st(i) == 'Available').length + ' items')}
+  </div>
 
-    <div class="two">
-      <section class="box">
-        <h2>Pending and completed orders</h2>
-        <div class="pills">
-          <span>Pending: ${c('Pending', 'Preparing')}</span>
-          <span>Completed: ${c('Completed')}</span>
-          <span>Cancelled: ${c('Cancelled')}</span>
-        </div>
-
-        ${o.length
-          ? '<ul class="list">' +
-            o.slice(-5).reverse().map(x =>
-              `<li><span>[${x.no.slice(3)}] ${esc(x.c)}</span>
-              <span class="tag ${cls[x.status]}">${x.status}</span></li>`
-            ).join('') +
-            '</ul>'
-          : '<p class="empty">No orders yet today.</p>'}
-      </section>
-
-      <section class="box">
-        <h2>Best-selling products</h2>
-        ${top.length
-          ? top.map(([n, q], i) =>
-            `<div class="bs">
-              <span>${i + 1}. ${esc(n)} - ${q}</span>
-              <div class="bar"><i style="width:${q / max * 100}%"></i></div>
-            </div>`
-          ).join('')
-          : '<p class="empty">Sales will show here once payments are recorded.</p>'}
-      </section>
-    </div>
-
+  <div class="two">
     <section class="box">
-      <h2>Stock alerts</h2>
-      ${low.length
-        ? '<ul class="list sa">' +
-          low.map(i =>
-            `<li>
-              <span>${esc(i.name)}</span>
-              <span>Remaining: ${i.stock} ${i.unit}</span>
-              <span class="tag ${st(i) == 'Low-Stock' ? 'pend' : 'bad'}">
-                ${st(i) == 'Low-Stock' ? 'Low-stock' : 'Out of Stock'}
-              </span>
-            </li>`
+      <h2>Pending and completed orders</h2>
+      <div class="pills">
+        <span>Pending: ${c('Pending')}</span>
+        <span>Completed: ${c('Completed')}</span>
+        <span>Cancelled: ${c('Cancelled')}</span>
+      </div>
+
+      ${today.length
+        ? '<ul class="list">' +
+          today.slice().sort((a, b) => b.createdAt - a.createdAt).slice(0, 5).map(o =>
+            `<li><span>[${esc(o.no)}] ${esc(o.customer)}</span>
+            <span class="tag ${cls[o.status] || ''}">${esc(o.status)}</span></li>`
           ).join('') +
           '</ul>'
-        : '<p class="empty">All ingredients are stocked.</p>'}
-    </section>`;
-  },
+        : '<p class="empty">No orders yet today.</p>'}
+    </section>
 
-  settings() {
-    return '<section class="box"><h2>Settings</h2><p>Products, users and backups will go here.</p></section>';
-  },
+    <section class="box">
+      <h2>Best-selling products</h2>
+      ${top.length
+        ? top.map(([n, q], i) =>
+          `<div class="bs">
+            <span>${i + 1}. ${esc(n)} - ${q}</span>
+            <div class="bar"><i style="width:${q / max * 100}%"></i></div>
+          </div>`
+        ).join('')
+        : '<p class="empty">Sales will show here once orders are placed.</p>'}
+    </section>
+  </div>
 
-  orders() {
-    const opts = db.prods.map(p =>
-      `<option value="${p.id}">${esc(p.name)} (${money(p.price)})</option>`
-    ).join('');
+  <section class="box">
+    <h2>Stock alerts</h2>
+    ${low.length
+      ? '<ul class="list sa">' +
+        low.map(i =>
+          `<li>
+            <span>${esc(i.name)}</span>
+            <span>Remaining: ${i.stock} ${i.unit}</span>
+            <span class="tag ${st(i) == 'Low-Stock' ? 'pend' : 'bad'}">
+              ${st(i) == 'Low-Stock' ? 'Low-stock' : 'Out of Stock'}
+            </span>
+          </li>`
+        ).join('') +
+        '</ul>'
+      : '<p class="empty">All ingredients are stocked.</p>'}
+  </section>`;
+}
 
-    const rows = db.orders.slice().reverse().map(o => [
-      o.no,
-      esc(o.c),
-      `${o.qty} x ${esc(P(o.pid).name)}${o.n ? '<br><small>' + esc(o.n) + '</small>' : ''}`,
-      o.status == 'Cancelled'
-        ? `Cancelled<br><small>${esc(o.reason)}</small>`
-        : `<select data-act="status" data-id="${o.id}" aria-label="Order status">
-            ${['Pending','Preparing','Completed'].map(s =>
-              `<option${s == o.status ? ' selected' : ''}>${s}</option>`
-            ).join('')}
-          </select>`,
-      o.time,
-      (['Pending','Preparing'].includes(o.status)
-        ? `<button data-act="cancel" data-id="${o.id}">Cancel</button>`
-        : '') +
-      (o.status == 'Completed' && !db.sales.some(s => s.oid == o.id)
-        ? `<button class="pr" data-act="pay" data-id="${o.id}">Record cash payment</button>`
-        : '')
-    ]);
-
-    return `<h1>Orders</h1>
-      ${alerts()}
-      ${msg}
-      <form id="of" class="fm">
-        <label>Customer name<input name="c" required></label>
-        <label>Product<select name="p">${opts}</select></label>
-        <label>Quantity<input name="q" type="number" min="1" value="1" required></label>
-        <label>Details / customization<input name="n"></label>
-        <button class="pr">Record order</button>
-      </form>
-      ${tb(['Order','Customer','Item','Status','Time','Actions'], rows)}`;
-  },
-
-  inv() {
-    const own = me.role == 'Owner';
-
-    return `<h1>Inventory</h1>
-      ${alerts()}` +
-      tb(
-        ['Ingredient','Beginning','Stock-in','Stock-out','Remaining','Status', own ? 'Action' : ''],
-        db.ings.map(i => [
-          esc(i.name),
-          i.begin + ' ' + i.unit,
-          i.inn,
-          i.out,
-          i.stock + ' ' + i.unit,
-          `<span class="tag${st(i) == 'Available' ? '' : ' bad'}">${st(i)}</span>`,
-          own ? `<button data-act="stockin" data-id="${i.id}">Add stock</button>` : ''
-        ])
-      );
-  },
-
-  tx() {
-    const sales = db.sales.slice().reverse().map(s => [
-      s.id,
-      s.date,
-      esc(s.pn) + ' x ' + s.qty,
-      money(s.total),
-      `<span class="tag${s.status == 'Refunded' ? ' bad' : ''}">${s.status}</span>`,
-      s.status == 'Completed'
-        ? `<button data-act="refund" data-id="${s.id}">Refund</button>`
-        : ''
-    ]);
-
-    const ref = db.refunds.slice().reverse().map(r => [
-      r.sid,
-      r.date,
-      money(r.amt),
-      esc(r.why),
-      r.back ? 'Returned to stock' : 'Cannot be resold',
-      esc(r.by)
-    ]);
-
-    return `<h1>Transactions</h1>
-      ${msg}
-      ${tb(['Sale','Date','Item','Total','Status','Action'], sales)}
-      <h2>Refunds</h2>
-      ${tb(['Sale','Date','Amount','Reason','Item','Approved by'], ref)}`;
-  },
-
-  exp() {
-    const cats = [
-      'Rent','Electricity','Water','Internet','Salaries/Wages',
-      'Supplies','Transportation','Maintenance','Other'
-    ];
-
-    return `<h1>Expenses</h1>
-      <form id="ef" class="fm">
-        <label>Type<select name="t">
-          ${cats.map(c => `<option>${c}</option>`).join('')}
-        </select></label>
-        <label>Description<input name="d"></label>
-        <label>Amount (₱)<input name="a" type="number" min="0.01" step="0.01" required></label>
-        <button class="pr">Save expense</button>
-      </form>` +
-      tb(
-        ['Date','Type','Description','Amount'],
-        db.exps.slice().reverse().map(e => [
-          e.date,
-          e.t,
-          esc(e.d),
-          money(e.amt)
-        ])
-      ) +
-      `<p><b>Total: ${money(sum(db.exps, 'amt'))}</b></p>`;
-  },
-
-  pnl() {
-    const s = sum(done(), 'total');
-    const c = sum(done(), 'cost');
-    const e = sum(db.exps, 'amt');
-    const n = s - c - e;
-
-    return `<h1>Profit / Loss</h1>
-      <div class="kp">
-        ${k('Total sales', money(s))}
-        ${k('Total product costs', money(c))}
-        ${k('Gross profit', money(s - c))}
-        ${k('Operating expenses', money(e))}
-        ${k('Net profit / loss', money(n))}
-      </div>
-      <h2>Status</h2>
-      <p class="big">${n >= 0 ? 'Earning' : 'Losing money'}</p>
-      <p>Refunded sales are left out. Product cost = ingredients used + packaging.</p>
-      <h2>Cost per product</h2>
-      ${tb(
-        ['Product','Price','Cost','Margin'],
-        db.prods.map(p => [
-          esc(p.name),
-          money(p.price),
-          money(pcost(p)),
-          money(p.price - pcost(p))
-        ])
-      )}`;
-  },
-
-  audit() {
-    return '<h1>Audit log</h1>' +
-      tb(
-        ['Time','User','Action','Area'],
-        db.audit.map(a => [
-          a.t,
-          esc(a.u),
-          esc(a.a),
-          a.tbl
-        ])
-      );
-  }
-};
-
-// Main dashboard rendering.
+// ---------- Page rendering ----------
 function render() {
-  clearTimeout(idle);
-
-  if (!me) {
-    location.replace(LOGIN_URL);
-    return;
-  }
-
-  // Validate the user role before accessing navigation.
-  const nav = NAV[me.role];
-
-  if (!nav) {
-    console.error('Invalid user role:', me.role);
-    sessionStorage.removeItem('me');
-    me = null;
-    location.replace(LOGIN_URL);
-    return;
-  }
+  if (!me || !BBNav.canSee(me.role, 'dash')) return;
 
   const app = $('#app');
 
@@ -494,64 +198,37 @@ function render() {
     return;
   }
 
-  idle = setTimeout(() => {
-    me = null;
-    sessionStorage.removeItem('me');
-    sessionStorage.notice = 'You were logged out after 10 minutes of inactivity.';
-    location.replace(LOGIN_URL);
-  }, IDLE_MS);
+  BBNav.startIdle();
 
-  if (!nav.some(n => n[0] == view)) {
-    view = nav[0][0];
-  }
-
-  const item = n =>
-    `<button data-act="nav" data-v="${n[0]}" class="${n[0] == view ? 'on' : ''}">
-      ${ico(n[0])}${n[1]}
-    </button>`;
-
+  const db = loadDatabase();
   const alertN = db.ings.filter(i => st(i) != 'Available').length;
 
   try {
     app.innerHTML = `
       <div class="shell">
-        <aside class="side">
-          <div class="brandbox">
-            <img src="logo.jpg" alt="Cafe logo">
-            <span>Brews &amp; Blessings</span>
-          </div>
-
-          <nav>
-            ${nav.filter(n => n[0] != 'settings').map(item).join('')}
-          </nav>
-
-          <div class="foot">
-            ${nav.filter(n => n[0] == 'settings').map(item).join('')}
-            <button data-act="out">${ico('out')}Log out</button>
-          </div>
-        </aside>
+        ${BBNav.sidebar('dash')}
 
         <main>
           <div class="top">
-            <h1>${nav.find(n => n[0] == view)[1]}</h1>
+            <h1>Dashboard</h1>
             <div class="meta">
               <span>Today: ${new Date().toLocaleDateString('en-US', {
                 month:'short',
                 day:'numeric'
               })}</span>
               <span class="pill">Logged in: ${esc(me.name)}</span>
-              <span class="pill" title="Stock alerts">${ico('bell')}${alertN}</span>
+              <span class="pill" title="Stock alerts">Stock alerts: ${alertN}</span>
             </div>
           </div>
 
           ${dbWarning ? `<div class="warn">${esc(dbWarning)}</div>` : ''}
 
-          ${V[view]().replace(/<h1>.*?<\/h1>/, '')}
+          ${dashboardHTML(db)}
         </main>
       </div>
     `;
 
-    console.log('Dashboard rendered successfully. Current view:', view);
+    console.log('Dashboard rendered successfully.');
 
   } catch (error) {
     console.error('Dashboard rendering error:', error);
@@ -566,234 +243,16 @@ function render() {
       </main>
     `;
   }
-
-  msg = '';
 }
 
-// Form submissions.
-document.addEventListener('submit', e => {
-  e.preventDefault();
-
-  const f = Object.fromEntries(new FormData(e.target));
-
-  if (e.target.id == 'lf') {
-    const u = db.users.find(x => x.u == f.u && x.p == f.p);
-
-    if (!u) {
-      msg = 'Wrong username or password. Check both and try again.';
-      return render();
-    }
-
-    me = u;
-    sessionStorage.me = JSON.stringify(u);
-
-    if (u.role == 'Barista') db.duty = u.name;
-
-    save();
-    log('Logged in', 'USER');
-    msg = '';
-    view = '';
-  }
-
-  if (e.target.id == 'of') {
-    const p = P(f.p);
-    const q = +f.q;
-
-    if (!p || !Number.isInteger(q) || q < 1) {
-      alert('Please select a valid product and quantity.');
-      return;
-    }
-
-    const o = {
-      id:db.seq++,
-      pid:p.id,
-      qty:q,
-      c:f.c,
-      n:f.n,
-      status:'Pending',
-      date:day(),
-      time:new Date().toLocaleTimeString()
-    };
-
-    const short = Object.entries(p.rec).find(([i, n]) => {
-      const ingredient = G(i);
-      return !ingredient || ingredient.stock < n * q;
-    });
-
-    if (short) {
-      msg = `<div class="warn">Not enough ${esc(G(short[0])?.name || 'ingredient')} for this order. Add stock first.</div>`;
-    } else {
-      o.no = 'BB-' + String(db.orders.length + 1).padStart(3, '0');
-      db.orders.push(o);
-      use(o, 1);
-      log('Recorded order ' + o.no, 'ORDERS');
-    }
-  }
-
-  if (e.target.id == 'ef') {
-    db.exps.push({
-      date:day(),
-      t:f.t,
-      d:f.d,
-      amt:+f.a
-    });
-
-    log('Added ' + f.t + ' expense', 'EXPENSE');
-  }
-
-  save();
-  render();
-});
-
-// Order status changes.
-document.addEventListener('change', e => {
-  if (e.target.dataset.act != 'status') return;
-
-  const o = db.orders.find(x => x.id == e.target.dataset.id);
-
-  if (!o) return;
-
-  o.status = e.target.value;
-
-  log(`Order ${o.no} set to ${o.status}`, 'ORDERS');
-
-  render();
-});
-
-// Dashboard button actions.
-document.addEventListener('click', e => {
-  if (me) {
-    clearTimeout(idle);
-
-    idle = setTimeout(() => {
-      me = null;
-      sessionStorage.removeItem('me');
-      sessionStorage.notice = 'You were logged out after 10 minutes of inactivity.';
-      location.replace(LOGIN_URL);
-    }, IDLE_MS);
-  }
-
-  const b = e.target.closest('[data-act]');
-
-  if (!b || b.tagName == 'SELECT') return;
-
-  const a = b.dataset.act;
-  const id = b.dataset.id;
-  const o = db.orders.find(x => x.id == id);
-
-  if (a == 'nav') {
-    view = b.dataset.v;
-  }
-
-  if (a == 'out') {
-    log('Logged out', 'USER');
-    me = null;
-    sessionStorage.removeItem('me');
-    location.replace(LOGIN_URL);
-    return;
-  }
-
-  if (a == 'cancel') {
-    if (!o) return;
-
-    const why = (prompt('Reason for cancelling this order (required):') || '').trim();
-
-    if (!why) {
-      return alert('A reason is required to cancel an order.');
-    }
-
-    o.status = 'Cancelled';
-    o.reason = why;
-
-    use(o, -1);
-
-    log(`Cancelled ${o.no}: ${why}`, 'ORDERS');
-  }
-
-  if (a == 'pay') {
-    if (!o) return;
-
-    const p = P(o.pid);
-
-    if (!p) return;
-
-    const total = p.price * o.qty;
-    const t = parseFloat(prompt(`Total is ${money(total)}. Cash received (₱):`));
-
-    if (isNaN(t) || t < total) {
-      return alert('Cash received must cover the total.');
-    }
-
-    db.sales.push({
-      id:'S' + String(db.sales.length + 1).padStart(3, '0'),
-      oid:o.id,
-      date:day(),
-      pn:p.name,
-      qty:o.qty,
-      total,
-      cost:pcost(p) * o.qty,
-      status:'Completed'
-    });
-
-    log(`Recorded cash payment for ${o.no}`, 'SALE');
-
-    msg = `<div class="warn">Payment recorded. Change: ${money(t - total)}</div>`;
-  }
-
-  if (a == 'stockin') {
-    const q = parseFloat(prompt('Quantity to add:'));
-
-    if (!(q > 0)) return;
-
-    const g = G(id);
-
-    if (!g) return;
-
-    g.stock += q;
-    g.inn += q;
-
-    log(`Stock-in ${q} ${g.unit} ${g.name}`, 'STOCK_MOVEMENT');
-  }
-
-  if (a == 'refund' && me.role == 'Owner') {
-    const s = db.sales.find(x => x.id == id);
-
-    if (!s || s.status != 'Completed') return;
-
-    const why = (prompt('Reason for refund (required):') || '').trim();
-
-    if (!why) {
-      return alert('A reason is required for a refund.');
-    }
-
-    const back = confirm('Can this item be resold? OK = yes, return ingredients to stock. Cancel = no.');
-
-    s.status = 'Refunded';
-
-    db.refunds.push({
-      sid:s.id,
-      date:day(),
-      amt:s.total,
-      why,
-      back,
-      by:me.name
-    });
-
-    if (back) {
-      const order = db.orders.find(x => x.id == s.oid);
-      if (order) use(order, -1);
-    }
-
-    log(`Approved refund ${s.id}: ${why}`, 'REFUND');
-  }
-
-  save();
-  render();
+// Refresh the numbers when the user comes back to this page with the browser's Back button.
+window.addEventListener('pageshow', e => {
+  if (e.persisted) render();
 });
 
 // Start the dashboard.
-console.log('4. Starting dashboard render');
+console.log('3. Starting dashboard render');
 
 render();
 
-console.log('5. Dashboard initialization finished');
+console.log('4. Dashboard initialization finished');

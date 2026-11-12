@@ -43,72 +43,6 @@ h2 {
   color: var(--brown-d)
 }
 
-/* Sidebar */
-.sidebar {
-  width: 194px;
-  background: var(--brown-d);
-  color: var(--cream);
-  padding: 22px 9px;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  flex-shrink: 0
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 2px 4px;
-  font-family: 'Playfair Display', serif;
-  font-weight: 700;
-  font-size: 14px;
-  line-height: 1.2
-}
-
-.brand .logo {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: var(--cream);
-  border: 2px solid var(--line);
-  object-fit: cover;
-  flex-shrink: 0
-}
-
-.nav {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  flex: 1
-}
-
-.nav a {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 50px;
-  padding: 10px 14px;
-  border-radius: 10px;
-  background: rgba(227, 221, 209, .07);
-  color: var(--cream);
-  text-decoration: none;
-  font-size: 13px
-}
-
-.nav a:hover {
-  background: rgba(227, 221, 209, .15)
-}
-
-.nav a.active {
-  background: var(--teal);
-  color: #fff
-}
-
-.nav .spacer {
-  flex: 1
-}
-
 /* Main */
 main {
   flex: 1;
@@ -805,6 +739,8 @@ textarea.input { resize: vertical; }
 .head-main { display: flex; align-items: center; gap: 12px; }
 .c-img { width: 72px; height: 72px; object-fit: cover; border-radius: 10px; background: #fdf8f2; }
 
-/* Sidebar logo */
-.brand { gap: 10px; }
-.brand .logo { width: 64px; height: 64px; border-radius: 0; background: none; border: 0; object-fit: contain; }
+/* Small screens: the shared sidebar (nav.js) stacks on top */
+@media (max-width:760px) {
+  body { flex-direction: column; }
+  main { padding: 24px 18px; }
+}

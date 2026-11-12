@@ -1,6 +1,15 @@
 (() => {
   "use strict";
 
+  // Check login and load the shared POS sidebar.
+  if (!window.BBNav) {
+    console.error("BBNav is not loaded. Check the nav.js script path.");
+    return;
+  }
+
+  const me = BBNav.mount("orders");
+
+  if (!me) return;
   /* ---------- Helpers ---------- */
   const $ = (id) => document.getElementById(id);
   const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
@@ -22,7 +31,6 @@
     month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit"
   });
   const IMGS = window.IMG || {};
-  if (window.LOGO) $("logo").src = window.LOGO;
   const custText = (i) => [
     i.size, i.shots, "Sweetness " + i.sweetness, i.ice, i.notes ? "Notes: " + i.notes : ""
   ].filter(Boolean).join(" · ");
