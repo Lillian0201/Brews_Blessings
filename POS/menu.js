@@ -14,13 +14,9 @@ const SWEETNESS = [
 
 // espresso: true = the Espresso Shot option is shown for this category
 const CATEGORIES = [
-  { id: "coffee",     label: "Coffee",          espresso: true },
-  { id: "premium",    label: "Premium Coffee",  espresso: true },
-  { id: "seasalt",    label: "Sea Salt Series", espresso: true },
-  { id: "matcha",     label: "Matcha Series",   espresso: false },
-  { id: "ube",        label: "Ube Series",      espresso: false },
-  { id: "noncoffee",  label: "Non-Coffee",      espresso: false },
-  { id: "refreshers", label: "Refreshers",      espresso: false }
+  { id: "coffee",     label: "Coffee",     espresso: true },
+  { id: "noncoffee",  label: "Non-Coffee", espresso: false },
+  { id: "refreshers", label: "Refreshers", espresso: false }
 ];
 
 function item(cat, name, classic, grandeur, hot) {
@@ -35,46 +31,26 @@ const MENU = [
   item("coffee", "Cafe Latte", 120, 150, 110),
   item("coffee", "Caramel Latte", 120, 150, 115),
   item("coffee", "Caramel Macchiato", 130, 160, 125),
+  item("coffee", "Caramelized Mocha", 130, 160, 125),
+  item("coffee", "Dirty Matcha", 130, 160, 125),
   item("coffee", "Hazelnut Latte", 120, 150, 115),
-  item("coffee", "Mocha Latte", 130, 160, 125),
   item("coffee", "Salted Caramel Latte", 120, 150, 115),
   item("coffee", "Spanish Latte", 130, 160, 125),
-  item("coffee", "White Mocha Latte", 130, 160, 125),
   item("coffee", "Tres Leche Latte", 130, 160, 125),
-
-  // Premium Coffee
-  item("premium", "Caramelized Mocha", 130, 160, 125),
-  item("premium", "Biscoff Latte", 165, 205, 160),
-
-  // Sea Salt Series
-  item("seasalt", "Sea salt Latte", 150, 170, 145),
-  item("seasalt", "Sea salt Spanish Latte", 160, 180, 155),
-  item("seasalt", "Sea salt Ube Milk", 150, 170, 145),
-  item("seasalt", "Sea salt Matcha", 150, 170, 145),
-  item("seasalt", "Sea salt Dark Choco", 150, 170, 145),
-  item("seasalt", "Sea salt Biscoff Milk", 190, 210, 185),
-
-  // Matcha Series
-  item("matcha", "Dirty Matcha", 130, 160, 125),
-  item("matcha", "Strawberry Matcha", 120, 150, 115),
-  item("matcha", "Matcha Milk", 120, 150, 115),
-
-  // Ube Series
-  item("ube", "Ube Latte", 130, 160, 125),
-  item("ube", "Ube Matcha", 120, 150, 115),
-  item("ube", "Ube Milk", 120, 150, 115),
+  item("coffee", "White Mocha Latte", 130, 160, 125),
+  item("coffee", "Biscoff Latte", 165, 205, 160),
 
   // Non-Coffee
   item("noncoffee", "Blueberry Milk", 110, 140, 105),
   item("noncoffee", "Caramel Milk", 110, 140, 105),
   item("noncoffee", "Chocolate Milk", 110, 140, 105),
-  item("noncoffee", "Dark Choco Lava", 110, 140, 105),
-  item("noncoffee", "Biscoff Milk", 150, 180, 145),
-  item("noncoffee", "Mango Milk", 110, 140, 105),
   item("noncoffee", "Strawberry Milk", 110, 140, 105),
   item("noncoffee", "Oreo Milk", 110, 140, 105),
+  item("noncoffee", "Matcha Milk", 120, 150, 115),
+  item("noncoffee", "Strawberry Matcha", 120, 150, 115),
   item("noncoffee", "Strawberry Cocoa", 120, 150, 115),
   item("noncoffee", "Milky Berry Oreo", 120, 150, 115),
+
 
   // Refreshers (Classic and Grandeur only)
   item("refreshers", "Blueberry Fizz", 69, 89),

@@ -49,7 +49,7 @@
 
   function makeOrder(o) {
     const subtotal = round2(o.items.reduce((s, i) => s + i.price * i.qty, 0));
-    const total = round2(subtotal - o.discount + o.service);
+    const total = round2(subtotal - o.discount);
     return Object.assign({}, o, {
       subtotal, total, change: round2(Math.max(0, o.tendered - total))
     });
@@ -61,7 +61,7 @@
       makeOrder({
         no: "001", customer: "Anna", createdAt: now - 95 * min, status: "Pending",
         items: [{ name: "Caramel Latte", size: "Classic", shots: "1 Shot", sweetness: "50%", ice: "Less ice", price: 120, qty: 2 }],
-        discount: 0, service: 0, payment: "Cash", tendered: 300
+        discount: 0, payment: "Cash", tendered: 300
       }),
       makeOrder({
         no: "002", customer: "Ben", createdAt: now - 60 * min, status: "Completed",
@@ -69,12 +69,12 @@
           { name: "Americano", size: "Grandeur", shots: "2 Shots", sweetness: "0%", ice: "Regular ice", price: 110, qty: 1 },
           { name: "Blueberry Fizz", size: "Classic", shots: null, sweetness: "100%", ice: "Regular ice", price: 69, qty: 1 }
         ],
-        discount: 0, service: 0, payment: "GCash", tendered: 179
+        discount: 0, payment: "GCash", tendered: 179
       }),
       makeOrder({
         no: "003", customer: "Carla", createdAt: now - 30 * min, status: "Cancelled",
         items: [{ name: "Matcha Milk", size: "Hot", shots: null, sweetness: "50%", ice: null, price: 115, qty: 1 }],
-        discount: 0, service: 0, payment: "Cash", tendered: 200
+        discount: 0, payment: "Cash", tendered: 200
       })
     ];
   }
@@ -251,16 +251,13 @@
     renderCart();
   });
 
-  // Discount is a % of the subtotal; service charge is a fixed peso amount.
-  function totals() {
-    const subtotal = round2(cart.reduce((s, i) => s + i.price * i.qty, 0));
-    const dv = Math.max(0, parseFloat($("discount").value) || 0);
-    const discount = round2(Math.min(subtotal * Math.min(dv, 100) / 100, subtotal));
-    const base = subtotal - discount;
-    const sv = Math.max(0, parseFloat($("service").value) || 0);
-    const service = round2(sv);
-    return { subtotal, discount, service, total: round2(base + service) };
-  }
+  // Discount is a % of the subtotal.
+function totals() {
+  const subtotal = round2(cart.reduce((s, i) => s + i.price * i.qty, 0));
+  const dv = Math.max(0, parseFloat($("discount").value) || 0);
+  const discount = round2(Math.min(subtotal * Math.min(dv, 100) / 100, subtotal));
+  return { subtotal, discount, total: round2(subtotal - discount) };
+}
 
   function updateSummary() {
     const t = totals();
@@ -283,7 +280,7 @@
     $("tendered").placeholder = $("payment").value === "Cash" ? "0" : "Exact amount";
   }
 
-  ["discount", "service", "payment", "tendered"].forEach((id) => {
+  ["discount", "payment", "tendered"].forEach((id) => {
     $(id).addEventListener("input", () => { setMsg(""); updateSummary(); });
     $(id).addEventListener("change", () => { setMsg(""); updateSummary(); });
   });
@@ -302,7 +299,6 @@
     cart = [];
     $("customer").value = "";
     $("discount").value = "";
-    $("service").value = "";
     $("payment").value = "Cash";
     $("tendered").value = "";
     $("ono").value = nextOrderNo();
@@ -339,7 +335,6 @@
       })),
       subtotal: t.subtotal,
       discount: t.discount,
-      service: t.service,
       total: t.total,
       payment: method,
       tendered: round2(tendered),
@@ -380,7 +375,6 @@
     const lines = [
       ["Subtotal", peso(o.subtotal), ""],
       o.discount > 0 ? ["Discount", "− " + peso(o.discount), ""] : null,
-      o.service > 0 ? ["Service Charge", peso(o.service), ""] : null,
       ["Total", peso(o.total), "total"],
       ["Payment", o.payment, ""],
       ["Amount tendered", peso(o.tendered), ""],
