@@ -15,8 +15,7 @@
   <main>
     <div class="top">
       <h1>Order/POS</h1>
-      <div class="pill">Low-stock: 3</div>
-    </div>
+<div class="pill" id="lowPill">Stock alerts: 0</div>    </div>
 
     <div class="grid">
       <div class="stack">
@@ -61,14 +60,6 @@
             <small class="hint" id="discHint"></small>
             <input class="input" id="discount" type="number" min="0" max="100" step="any" inputmode="decimal" placeholder="0">
             <span class="unit" aria-hidden="true">%</span>
-          </div>
-        </div>
-
-        <div class="line edit">
-          <label class="plain" for="service">Service Charge (₱)</label>
-          <div class="amt">
-            <input class="input" id="service" type="number" min="0" step="any" inputmode="decimal" placeholder="0">
-            <span class="unit" aria-hidden="true">₱</span>
           </div>
         </div>
 
@@ -166,6 +157,7 @@
 <script src="../nav.js" defer></script>
 <script src="./images.js" defer></script>
 <script src="./menu.js" defer></script>
+<script src="../inventory-store.js" defer></script>
 <script src="./script.js" defer></script>
 </body>
 

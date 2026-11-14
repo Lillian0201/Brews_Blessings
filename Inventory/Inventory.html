@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inventory | Brews &amp; Blessing</title>
+  <link rel="stylesheet" href="Inventory.css">
+</head>
+<body>
+<div class="layout">
+
+  <!-- Sidebar: if nav.js already builds the sidebar, replace this block with its container -->
+  <aside class="sidebar">
+    <div class="brand">
+      <img src="../Img/B%26B%20Logo.jpg" alt="Brews &amp; Blessings logo">
+      <span>Brews &amp; Blessings</span>
+    </div>
+    <nav>
+      <a href="../Dashboard/Dashboard.html">
+        <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+        Dashboard
+      </a>
+      <a href="../POS/pos.html">
+        <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/></svg>
+        Order/POS
+      </a>
+      <a class="active" href="#">
+        <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 12h8M8 15h8"/></svg>
+        Inventory
+      </a>
+      <a href="#">
+        <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h13l-3-3M17 17H4l3 3"/></svg>
+        Transactions
+      </a>
+      <a href="#">
+        <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m20 13-7 7L3 10V4h6z"/><circle cx="8.5" cy="8.5" r="1"/></svg>
+        Expense and Costing
+      </a>
+      <a href="#">
+        <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M7 16V9M12 16V5M17 16v-6"/></svg>
+        Profit/Loss Report
+      </a>
+      <a href="#">
+        <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        Audit log
+      </a>
+    </nav>
+    <div class="sidebar-bottom">
+      <a href="#">
+        <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M4.93 4.93l2.12 2.12m9.9 9.9 2.12 2.12M2 12h3m14 0h3M4.93 19.07l2.12-2.12m9.9-9.9 2.12-2.12"/></svg>
+        Settings (Owner)
+      </a>
+      <a href="#">
+        <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5m5 5H3"/><path d="M12 3h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7"/></svg>
+        Log out
+      </a>
+    </div>
+  </aside>
+
+  <main class="content">
+    <header class="topbar">
+      <h1>Inventory</h1>
+      <div class="pills">
+        <span class="pill plain" id="todayPill">Today: —</span>
+        <span class="pill">Logged in: Owner</span>
+        <span class="pill" id="lowPill">Stock alerts: 0</span>
+      </div>
+    </header>
+
+    <div class="toolbar">
+      <input type="text" id="search" placeholder="Search item or scan barcode">
+      <button class="btn ghost" id="scanBtn" title="Scan a barcode into the search box, then press Enter">Scan barcode</button>
+      <button class="btn" onclick="document.getElementById('siItem').focus()">+ Stock-in</button>
+      <button class="btn ghost" onclick="addItem()">+ Add item</button>
+    </div>
+
+    <section class="cards">
+      <div class="card"><p>Available</p><h2 id="cntAvail">0</h2></div>
+      <div class="card"><p>Low-stock</p><h2 id="cntLow">0</h2></div>
+      <div class="card"><p>Out-of-stock</p><h2 id="cntOut">0</h2></div>
+    </section>
+
+    <section class="panel">
+      <h3>Inventory Items</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th><th>Barcode</th><th>Unit</th><th>Unit Cost</th>
+              <th>Beginning</th><th>Stock-in</th><th>Stock-out</th><th>Remaining</th>
+              <th>Reorder level</th><th>Batch no.</th><th>Status</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="itemRows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="bottom-grid">
+      <section class="panel">
+        <h3>Stock movement log (FIFO)</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Date</th><th>Item</th><th>Type</th><th>Qty</th><th>Batch no.</th><th>By</th></tr>
+            </thead>
+            <tbody id="moveRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h3>Stock-in form</h3>
+        <label>Inventory name</label>
+        <select id="siItem"></select>
+        <div class="row">
+          <div>
+            <label>Quantity</label>
+            <input type="number" id="siQty" min="1" step="1">
+          </div>
+          <div>
+            <label>Batch no.</label>
+            <input type="text" id="siBatch" placeholder="e.g. B04">
+          </div>
+        </div>
+        <button class="btn full" onclick="saveStockIn()">Save stock-in</button>
+        <p class="msg" id="msg"></p>
+      </section>
+    </div>
+  </main>
+</div>
+<script src="../inventory-store.js"></script>
+<script src="Inventory.js"></script>
+</body>
+</html>

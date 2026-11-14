@@ -15,8 +15,7 @@
   const PAGES = {
     dash: '../Dashboard/Dashboard.html',
     orders: '../POS/POS.html',
-    inv: '',
-    tx: '',
+    inv: '../Inventory/Inventory.html',    tx: '',
     exp: '',
     pnl: '',
     audit: '',

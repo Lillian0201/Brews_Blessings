@@ -49,7 +49,7 @@
 
   function makeOrder(o) {
     const subtotal = round2(o.items.reduce((s, i) => s + i.price * i.qty, 0));
-    const total = round2(subtotal - o.discount + o.service);
+    const total = round2(subtotal - o.discount);
     return Object.assign({}, o, {
       subtotal, total, change: round2(Math.max(0, o.tendered - total))
     });
@@ -61,7 +61,7 @@
       makeOrder({
         no: "001", customer: "Anna", createdAt: now - 95 * min, status: "Pending",
         items: [{ name: "Caramel Latte", size: "Classic", shots: "1 Shot", sweetness: "50%", ice: "Less ice", price: 120, qty: 2 }],
-        discount: 0, service: 0, payment: "Cash", tendered: 300
+        discount: 0, payment: "Cash", tendered: 300
       }),
       makeOrder({
         no: "002", customer: "Ben", createdAt: now - 60 * min, status: "Completed",
@@ -69,12 +69,12 @@
           { name: "Americano", size: "Grandeur", shots: "2 Shots", sweetness: "0%", ice: "Regular ice", price: 110, qty: 1 },
           { name: "Blueberry Fizz", size: "Classic", shots: null, sweetness: "100%", ice: "Regular ice", price: 69, qty: 1 }
         ],
-        discount: 0, service: 0, payment: "GCash", tendered: 179
+        discount: 0, payment: "GCash", tendered: 179
       }),
       makeOrder({
         no: "003", customer: "Carla", createdAt: now - 30 * min, status: "Cancelled",
         items: [{ name: "Matcha Milk", size: "Hot", shots: null, sweetness: "50%", ice: null, price: 115, qty: 1 }],
-        discount: 0, service: 0, payment: "Cash", tendered: 200
+        discount: 0, payment: "Cash", tendered: 200
       })
     ];
   }
@@ -102,6 +102,11 @@
     const max = orders.reduce((m, o) => Math.max(m, parseInt(o.no, 10) || 0), 0);
     return String(max + 1).padStart(3, "0");
   };
+
+  // NEW: keep the header pill in sync with the shared inventory
+  function refreshAlerts() {
+    $("lowPill").textContent = "Stock alerts: " + BBInventory.alertCount();
+  }
 
   /* ---------- Products + filter ---------- */
   function renderChips() {
@@ -251,15 +256,12 @@
     renderCart();
   });
 
-  // Discount is a % of the subtotal; service charge is a fixed peso amount.
+  // Discount is a % of the subtotal.
   function totals() {
     const subtotal = round2(cart.reduce((s, i) => s + i.price * i.qty, 0));
     const dv = Math.max(0, parseFloat($("discount").value) || 0);
     const discount = round2(Math.min(subtotal * Math.min(dv, 100) / 100, subtotal));
-    const base = subtotal - discount;
-    const sv = Math.max(0, parseFloat($("service").value) || 0);
-    const service = round2(sv);
-    return { subtotal, discount, service, total: round2(base + service) };
+    return { subtotal, discount, total: round2(subtotal - discount) };
   }
 
   function updateSummary() {
@@ -283,7 +285,7 @@
     $("tendered").placeholder = $("payment").value === "Cash" ? "0" : "Exact amount";
   }
 
-  ["discount", "service", "payment", "tendered"].forEach((id) => {
+  ["discount", "payment", "tendered"].forEach((id) => {
     $(id).addEventListener("input", () => { setMsg(""); updateSummary(); });
     $(id).addEventListener("change", () => { setMsg(""); updateSummary(); });
   });
@@ -302,7 +304,6 @@
     cart = [];
     $("customer").value = "";
     $("discount").value = "";
-    $("service").value = "";
     $("payment").value = "Cash";
     $("tendered").value = "";
     $("ono").value = nextOrderNo();
@@ -339,16 +340,24 @@
       })),
       subtotal: t.subtotal,
       discount: t.discount,
-      service: t.service,
       total: t.total,
       payment: method,
       tendered: round2(tendered),
-      change: round2(tendered - t.total)
+      change: round2(tendered - t.total),
+      stockDeducted: false // NEW
     };
+
+    // NEW: check stock first, then deduct it from the shared inventory
+    const stock = BBInventory.canFulfil(order.items);
+    if (!stock.ok) return fail("Not enough stock: " + stock.shortages.join("; ") + ".");
+    BBInventory.deduct(order.items, order.no);
+    order.stockDeducted = true;
+
     orders.push(order);
     saveOrders();
     resetForm();
     renderOrders();
+    refreshAlerts(); // NEW
     toast("Order #" + order.no + " placed");
   }
 
@@ -380,7 +389,6 @@
     const lines = [
       ["Subtotal", peso(o.subtotal), ""],
       o.discount > 0 ? ["Discount", "− " + peso(o.discount), ""] : null,
-      o.service > 0 ? ["Service Charge", peso(o.service), ""] : null,
       ["Total", peso(o.total), "total"],
       ["Payment", o.payment, ""],
       ["Amount tendered", peso(o.tendered), ""],
@@ -424,9 +432,22 @@
     if (!b) return;
     const o = orders.find((x) => x.no === viewing);
     if (!o || o.status === b.dataset.status) return;
+
+    // NEW: restore stock when cancelling, deduct again when reopening
+    if (b.dataset.status === "Cancelled" && o.stockDeducted) {
+      BBInventory.restore(o.items, o.no);
+      o.stockDeducted = false;
+    } else if (o.status === "Cancelled" && b.dataset.status !== "Cancelled" && !o.stockDeducted) {
+      const stock = BBInventory.canFulfil(o.items);
+      if (!stock.ok) return toast("Not enough stock to reopen: " + stock.shortages.join("; "));
+      BBInventory.deduct(o.items, o.no);
+      o.stockDeducted = true;
+    }
+
     o.status = b.dataset.status;
     saveOrders();
     renderOrders();
+    refreshAlerts(); // NEW
     renderOrderDialog(o, o.status);
   });
 
@@ -434,5 +455,6 @@
   renderChips();
   renderProducts();
   renderOrders();
+  refreshAlerts(); // NEW
   resetForm();
 })();
