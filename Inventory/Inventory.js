@@ -1,6 +1,10 @@
 if (!window.BBNav) {
   console.error('nav.js is not loaded. Check the script path in Inventory.html.');
-} else if (!BBNav.mount('inv')) {
+  throw new Error('nav.js is required on the Inventory page');
+}
+
+const me = BBNav.mount('inv');
+if (!me) {
   // mount() redirects the user if their role can't see this page, so stop here
   throw new Error('Not allowed on this page');
 }
@@ -8,6 +12,8 @@ if (!window.BBNav) {
 const $ = (id) => document.getElementById(id);
 const S = window.BBInventory;
 const fmtPeso = (n) => "₱" + Number(n).toLocaleString("en-PH");
+
+$("userPill").textContent = `Logged in: ${me.name}`;
 
 let items = [];
 let movements = [];
@@ -39,7 +45,7 @@ function saveStockIn() {
     return flash("Pick an item, enter a quantity and a batch no.", true);
   }
   try {
-    S.stockIn(name, qty, batch, "Owner");
+    S.stockIn(name, qty, batch, me.name);
   } catch (err) {
     return flash(err.message, true);
   }
@@ -55,7 +61,7 @@ function promptStockOut(name) {
   const qty = Number(prompt(`Stock-out qty for ${name} (${it.unit}). Max ${S.remaining(it)}.`));
   if (!(qty > 0)) return;
   try {
-    S.stockOut(name, qty, "Barista");
+    S.stockOut(name, qty, me.name);
     render();
     flash(`Stock-out saved for ${name}.`);
   } catch (err) {
