@@ -16,6 +16,8 @@
     dash: '../Dashboard/Dashboard.html',
     orders: '../POS/POS.html',
     inv: '../Inventory/Inventory.html',    tx: '',
+    inv: '',
+    tx: '../Transactions/Transactions.html',
     exp: '',
     pnl: '',
     audit: '',
