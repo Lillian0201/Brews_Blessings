@@ -322,3 +322,40 @@ legend { font-size: 14px; color: var(--brown); margin-bottom: 8px; padding: 0 }
   body { flex-direction: column }
   main { padding: 24px 18px }
 }
+
+.side {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 220px;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 1000;
+}
+
+body {
+  display: block;
+  min-height: 100vh;
+}
+
+main {
+  margin-left: 220px;
+  min-width: 0;
+}
+
+/* Small Screens */
+@media (max-width: 760px) {
+  .side {
+    position: relative !important;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+
+  main {
+    margin-left: 0;
+    padding: 24px 18px;
+  }
+}
