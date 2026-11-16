@@ -9,50 +9,6 @@
 <body>
 <div class="layout">
 
-  <!-- Sidebar: if nav.js already builds the sidebar, replace this block with its container -->
-  <aside class="sidebar">
-    <div class="brand">
-      <img src="../Img/B%26B%20Logo.jpg" alt="Brews &amp; Blessings logo">
-      <span>Brews &amp; Blessings</span>
-    </div>
-    <nav>
-      <a href="../Dashboard/Dashboard.html">
-        <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v10H3z"/></svg>
-        Dashboard
-      </a>
-      <a href="../POS/pos.html">
-        <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/></svg>
-        Order/POS
-      </a>
-      <a class="active" href="#">
-        <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 12h8M8 15h8"/></svg>
-        Inventory
-      </a>
-      <a href="../Transactions/Transactions.html">
-        <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h16l-4-4M20 15H4l4 4"/></svg>
-        Transactions
-      </a>
-      <a href="#">
-        <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h8l8 8-8 8-8-8z"/><circle cx="8.5" cy="8.5" r="1"/></svg>
-        Expense and Costing
-      </a>
-      <a href="#">
-        <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16"/><path d="M10 4v16M15 4v16"/></svg>
-        Profit/Loss Report
-      </a>
-    </nav>
-    <div class="sidebar-bottom">
-      <a href="#">
-        <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M4.93 4.93l2.12 2.12m9.9 9.9 2.12 2.12M2 12h3m14 0h3M4.93 19.07l-2.12-2.12m9.9-9.9 2.12-2.12"/></svg>
-        Settings (Owner)
-      </a>
-      <a href="#">
-        <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5v16h5M15 8l4 4-4 4M19 12H9"/></svg>
-        Log out
-      </a>
-    </div>
-  </aside>
-
   <main class="content">
     <header class="topbar">
       <h1>Inventory</h1>
@@ -125,6 +81,7 @@
     </div>
   </main>
 </div>
+<script src="../nav.js"></script>
 <script src="../inventory-store.js"></script>
 <script src="Inventory.js"></script>
 </body>

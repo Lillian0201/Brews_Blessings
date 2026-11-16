@@ -1,3 +1,10 @@
+if (!window.BBNav) {
+  console.error('nav.js is not loaded. Check the script path in Inventory.html.');
+} else if (!BBNav.mount('inv')) {
+  // mount() redirects the user if their role can't see this page, so stop here
+  throw new Error('Not allowed on this page');
+}
+
 const $ = (id) => document.getElementById(id);
 const S = window.BBInventory;
 const fmtPeso = (n) => "₱" + Number(n).toLocaleString("en-PH");
