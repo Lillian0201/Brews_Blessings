@@ -1,3 +1,11 @@
+html {
+  background: var(--cream);
+}
+
+html.page-loading body {
+  visibility: hidden;
+}
+
 :root {
   --accent: #9a5c2c;     /* same as the sidebar's active pill */
   --accent-d: #7d4824;   /* hover */

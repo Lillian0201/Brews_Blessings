@@ -1,15 +1,28 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="en" class="page-loading">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Order/POS | Brews & Blessings</title>
+
   <link
     href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600&family=Playfair+Display:wght@600;700&display=swap"
     rel="stylesheet">
+
   <link rel="stylesheet" href="style.css">
+
+  <script src="../nav.js" defer></script>
+  <script src="./images.js" defer></script>
+  <script src="./menu.js" defer></script>
+  <script src="../inventory-store.js" defer></script>
+  <script src="./script.js" defer></script>
 </head>
+
+<script>
+  window.addEventListener("load", function () {
+    document.documentElement.classList.remove("page-loading");
+  });
+</script>
 
 <body>
   <main>
@@ -151,14 +164,5 @@
   </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-
-  <link rel="stylesheet" href="./style.css">
-
-<script src="../nav.js" defer></script>
-<script src="./images.js" defer></script>
-<script src="./menu.js" defer></script>
-<script src="../inventory-store.js" defer></script>
-<script src="./script.js" defer></script>
-</body>
 
 </html>

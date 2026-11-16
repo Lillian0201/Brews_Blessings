@@ -194,20 +194,61 @@
     return me;
   }
 
-  // Sidebar clicks (works for sidebars added at any time).
+  
+  // ---------- Sidebar navigation ----------
   document.addEventListener('click', (e) => {
+
+    // Logout button
     const out = e.target.closest('[data-nav-out]');
+
     if (out) {
       e.preventDefault();
       logout();
       return;
     }
+
+    // Pages that are not connected yet
     const soon = e.target.closest('.side a[data-soon]');
+
     if (soon) {
       e.preventDefault();
       alert('This page is not connected yet.');
+      return;
     }
+
+    // Sidebar page links
+    const link = e.target.closest('.side a');
+
+    if (!link) return;
+
+    // Allow opening links in another tab
+    if (
+      e.button !== 0 ||
+      e.ctrlKey ||
+      e.shiftKey ||
+      e.altKey ||
+      e.metaKey ||
+      link.target === '_blank'
+    ) {
+      return;
+    }
+
+    const destination = new URL(link.href, location.href);
+
+    // Ignore external links and current page
+    if (
+      destination.origin !== location.origin ||
+      destination.href === location.href
+    ) {
+      return;
+    }
+
+    // Navigate immediately
+    e.preventDefault();
+    window.location.href = destination.href;
+
   });
+
 
   injectCSS();
 
