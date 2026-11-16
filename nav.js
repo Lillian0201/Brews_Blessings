@@ -15,10 +15,10 @@
   const PAGES = {
     dash: '../Dashboard/Dashboard.html',
     orders: '../POS/POS.html',
-    inv: '../Inventory/Inventory.html',    tx: '',
+    inv: '../Inventory/Inventory.html',
+    tx: '../Transactions/Transactions.html',
     exp: '',
     pnl: '',
-    audit: '',
     settings: ''
 };
 
@@ -30,7 +30,6 @@
       ['tx', 'Transactions'],
       ['exp', 'Expense and Costing'],
       ['pnl', 'Profit/Loss Report'],
-      ['audit', 'Audit log'],
       ['settings', 'Settings (Owner)']
     ],
     Barista: [
@@ -42,12 +41,11 @@
   const ICON = {
     dash: '<path d="M3 11l9-8 9 8v10H3z"/>',
     orders: '<rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/>',
-    inv: '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 10h8M8 14h8"/>',
+    inv: '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 12h8M8 15h8"/>',
     tx: '<path d="M4 9h16l-4-4M20 15H4l4 4"/>',
     exp: '<path d="M4 4h8l8 8-8 8-8-8z"/><circle cx="8.5" cy="8.5" r="1"/>',
     pnl: '<rect x="4" y="4" width="16" height="16"/><path d="M10 4v16M15 4v16"/>',
-    audit: '<circle cx="12" cy="12" r="8"/><path d="M12 8v5l3 2"/>',
-    settings: '<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/>',
+    settings: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M4.93 4.93l2.12 2.12m9.9 9.9 2.12 2.12M2 12h3m14 0h3M4.93 19.07l-2.12-2.12m9.9-9.9 2.12-2.12"/>',
     out: '<path d="M10 4H5v16h5M15 8l4 4-4 4M19 12H9"/>'
   };
 
