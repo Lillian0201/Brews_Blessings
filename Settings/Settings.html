@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Settings | Brews & Blessings</title>
+  <link rel="stylesheet" href="Settings.css">
+  <script src="../nav.js"></script>
+</head>
+<body>
+
+  <main>
+    <header class="page-head">
+      <h1>Settings</h1>
+    </header>
+
+    <!-- Navigation Pills -->
+    <div class="pills">
+      <button type="button" class="pill active" data-tab="products">Products</button>
+      <button type="button" class="pill" data-tab="categories">Categories</button>
+      <button type="button" class="pill" data-tab="users">Users</button>
+      <button type="button" class="pill" data-tab="audit">Audit Log</button>
+      <button type="button" class="pill" data-tab="backups">Backups</button>
+    </div>
+
+    <!-- 2x2 Grid Layout -->
+    <div class="settings-grid">
+
+      <!-- Card 1: Products -->
+      <section class="card" id="cardProducts">
+        <h2>Products</h2>
+        <button type="button" class="btn-card-action" id="btnAddProduct">+ Add Product</button>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Category</th>
+                <th>Selling Price</th>
+                <th>Packaging Cost</th>
+                <th>Available</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="productsTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Card 2: Users -->
+      <section class="card" id="cardUsers">
+        <h2>Users</h2>
+        <button type="button" class="btn-card-action" id="btnAddUser">+ Add User</button>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Username</th>
+                <th>Role</th>
+                <th>Active</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Card 3: Audit Log -->
+      <section class="card" id="cardAudit">
+        <h2>Audit Log</h2>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date/Time</th>
+                <th>User</th>
+                <th>Action</th>
+                <th>Table Affected</th>
+              </tr>
+            </thead>
+            <tbody id="auditTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Card 4: Backups -->
+      <section class="card backup-card" id="cardBackups">
+        <div>
+          <h2>Backups</h2>
+          <div class="backup-last" id="backupStatusText">Last Backup: Oct 27, 2026</div>
+        </div>
+        <button type="button" class="btn-backup" id="btnBackupNow">Backup Now</button>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Add Product Modal -->
+  <div class="modal-overlay" id="productModal">
+    <div class="modal-content">
+      <h2 style="font-family: Georgia, serif; margin-top: 0;">Add Product</h2>
+      <form id="productForm">
+        <div class="form-group">
+          <label for="prodName">Product Name</label>
+          <input type="text" id="prodName" required placeholder="e.g. Vanilla Latte">
+        </div>
+        <div class="form-group">
+          <label for="prodCategory">Category</label>
+          <select id="prodCategory">
+            <option value="Coffee">Coffee</option>
+            <option value="Non Coffee">Non Coffee</option>
+            <option value="Refreshers">Refreshers</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="prodPrice">Selling Price (₱)</label>
+          <input type="number" id="prodPrice" required placeholder="e.g. 120">
+        </div>
+        <div class="form-group">
+          <label for="prodPkg">Packaging Cost (₱)</label>
+          <input type="number" id="prodPkg" required placeholder="e.g. 8">
+        </div>
+        <div class="modal-btns">
+          <button type="button" class="btn-cancel" id="cancelProductBtn">Cancel</button>
+          <button type="submit" class="btn-submit">Add</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add User Modal -->
+  <div class="modal-overlay" id="userModal">
+    <div class="modal-content">
+      <h2 style="font-family: Georgia, serif; margin-top: 0;">Add User</h2>
+      <form id="userForm">
+        <div class="form-group">
+          <label for="userName">Full Name</label>
+          <input type="text" id="userName" required placeholder="e.g. Maria Santos">
+        </div>
+        <div class="form-group">
+          <label for="userUsername">Username</label>
+          <input type="text" id="userUsername" required placeholder="e.g. barista2">
+        </div>
+        <div class="form-group">
+          <label for="userRole">Role</label>
+          <select id="userRole">
+            <option value="POS User">POS User (Barista)</option>
+            <option value="Owner/Manager">Owner/Manager</option>
+          </select>
+        </div>
+        <div class="modal-btns">
+          <button type="button" class="btn-cancel" id="cancelUserBtn">Cancel</button>
+          <button type="submit" class="btn-submit">Add</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="Settings.js"></script>
+</body>
+</html>
