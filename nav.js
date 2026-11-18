@@ -17,10 +17,10 @@
     orders: '../POS/POS.html',
     inv: '../Inventory/Inventory.html',    
     tx: '../Transactions/Transactions.html',
-    exp: '',
-    pnl: '',
-    audit: '',
-    settings: ''
+    exp: '../Expense/Expense.html',
+    pnl: '../ProfitLoss/ProfitLoss.html',
+    audit: '../Settings/Settings.html',
+    settings: '../Settings/Settings.html'
 };
 
   const NAV = {

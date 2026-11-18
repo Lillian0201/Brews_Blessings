@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Expense and Product Costing | Brews & Blessings</title>
+  <link rel="stylesheet" href="Expense.css">
+  <script src="../nav.js"></script>
+</head>
+<body>
+
+  <main>
+    <header class="page-head">
+      <h1>Expense and Product Costing</h1>
+    </header>
+
+    <div class="grid-2">
+
+      <!-- LEFT: Expense Tracking -->
+      <section class="card" aria-labelledby="expenseHeading">
+        <h2 id="expenseHeading">Expense Tracking</h2>
+
+        <form id="expenseForm">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="expType">Expense Type</label>
+              <select id="expType" required>
+                <option value="Rent">Rent</option>
+                <option value="Electricity">Electricity</option>
+                <option value="Water">Water</option>
+                <option value="Internet">Internet</option>
+                <option value="Salaries/Wages">Salaries / Wages</option>
+                <option value="Supplies">Supplies</option>
+                <option value="Operating Transportation Expenses">Operating Transportation Expenses</option>
+                <option value="Maintenance">Maintenance</option>
+                <option value="Other Expenses">Other Expenses</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="expAmount">Amount (₱)</label>
+              <input type="number" id="expAmount" placeholder="e.g. 1500" step="any" required>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="expDesc">Description</label>
+              <input type="text" id="expDesc" placeholder="e.g. Cups and lids" required>
+            </div>
+            <div class="form-group">
+              <label for="expDate">Date</label>
+              <input type="date" id="expDate" required>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-primary">Save Expense</button>
+        </form>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Description</th>
+                <th class="text-right">Amount</th>
+              </tr>
+            </thead>
+            <tbody id="expenseTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- RIGHT: Product Costing -->
+      <section class="card" aria-labelledby="costingHeading">
+        <h2 id="costingHeading">Product Costing</h2>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label for="productSelect">Product</label>
+          <select id="productSelect">
+            <!-- Dynamically populated with all menu products -->
+          </select>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Ingredient</th>
+                <th>Qty Used</th>
+                <th>Cost / Unit</th>
+                <th class="text-right">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody id="costingTableBody">
+              <!-- Dynamically populated based on selected product -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="costing-summary">
+          <div class="form-group">
+            <label for="packingCost">Packing Cost</label>
+            <input type="text" id="packingCost" value="₱8.00">
+          </div>
+          <div class="form-group">
+            <label for="totalCost">Total cost Per Product</label>
+            <input type="text" id="totalCost" value="₱44.60" readonly>
+          </div>
+          <div class="form-group">
+            <label for="sellingPrice">Selling Price</label>
+            <input type="text" id="sellingPrice" value="₱120.00">
+          </div>
+          <div class="form-group">
+            <label for="margin">Margin</label>
+            <input type="text" id="margin" value="₱75.40" readonly>
+          </div>
+        </div>
+
+        <button type="button" id="saveCostingBtn" class="btn-primary" style="margin-bottom: 0;">Save Costing</button>
+      </section>
+
+    </div>
+  </main>
+
+  <script src="Expense.js"></script>
+</body>
+</html>
