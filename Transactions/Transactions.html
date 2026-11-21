@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Transactions | Brews and Blessing</title>
+  <link rel="stylesheet" href="Transactions.css">
+</head>
+<body>
+
+  <!-- Shared login check, sidebar and auto-logout (repo root). Transactions.js calls BBNav.mount('tx'). -->
+  <script src="../nav.js"></script>
+
+  <main>
+    <header class="page-head">
+      <h1>Transaction Management</h1>
+    </header>
+
+    <div class="tabs" role="tablist" aria-label="Transaction views">
+      <button class="tab is-active" role="tab" aria-selected="true" data-tab="sales">Sales</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="discounts">Discounts</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="voided">Voided</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="refunded">Refunded</button>
+    </div>
+
+    <div class="grid">
+
+      <!-- LEFT: transactions table -->
+      <section class="card card-table" aria-labelledby="tableTitle">
+        <div class="card-head">
+          <h2 id="tableTitle">Sale Transaction</h2>
+          <div class="filters">
+            <input type="search" id="searchBox" placeholder="Search sale #, order #" aria-label="Search transactions">
+            <select id="paymentFilter" aria-label="Filter by payment method">
+              <option value="">All payments</option>
+              <option value="Cash">Cash</option>
+              <option value="GCash">GCash</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table id="txTable">
+            <thead id="txHead"></thead>
+            <tbody id="txBody"></tbody>
+          </table>
+        </div>
+        <p class="empty" id="emptyMsg" hidden></p>
+      </section>
+
+      <!-- MIDDLE: refund -->
+      <section class="card" aria-labelledby="refundTitle">
+        <h2 id="refundTitle">Refund Report</h2>
+        <form id="refundForm" novalidate>
+          <label for="refundSale">Sale</label>
+          <select id="refundSale" required></select>
+
+          <label for="refundItem">Item</label>
+          <select id="refundItem" required disabled>
+            <option value="">Select a sale first</option>
+          </select>
+
+          <label for="refundAmount">Refund Amount</label>
+          <input type="number" id="refundAmount" min="0" step="0.01" inputmode="decimal" placeholder="0.00" required>
+
+          <label for="refundReason">Reason</label>
+          <input type="text" id="refundReason" maxlength="150" required>
+
+          <label class="check">
+            <input type="checkbox" id="refundReturned">
+            Item was returned (restock it)
+          </label>
+
+          <label for="refundApprover">Approved By</label>
+          <input type="text" id="refundApprover" readonly>
+
+          <p class="form-error" id="refundError" role="alert" hidden></p>
+
+          <div class="btn-row">
+            <button type="button" class="btn btn-soft" id="btnRequest">Request</button>
+            <button type="button" class="btn btn-brown" id="btnApprove">Approve Refund</button>
+          </div>
+        </form>
+
+        <div class="pending" id="pendingBox" hidden>
+          <h3>Pending refund requests</h3>
+          <ul id="pendingList"></ul>
+        </div>
+      </section>
+
+      <!-- RIGHT: void -->
+      <section class="card" aria-labelledby="voidTitle">
+        <h2 id="voidTitle">Void Transaction</h2>
+        <form id="voidForm" novalidate>
+          <label for="voidSale">Sale</label>
+          <select id="voidSale" required></select>
+
+          <label for="voidReason">Void Reason</label>
+          <input type="text" id="voidReason" maxlength="150" required>
+
+          <p class="form-error" id="voidError" role="alert" hidden></p>
+
+          <button type="button" class="btn btn-danger btn-block" id="btnVoid">Void Sale</button>
+        </form>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Confirmation dialog (requirement: confirm before modifying important records) -->
+  <dialog id="confirmDialog">
+    <form method="dialog">
+      <h3 id="confirmTitle"></h3>
+      <p id="confirmMsg"></p>
+      <div class="btn-row">
+        <button value="cancel" class="btn btn-soft">Cancel</button>
+        <button value="ok" class="btn btn-brown" id="confirmOk">Confirm</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="Transactions.js"></script>
+</body>
+</html>
