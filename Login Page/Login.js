@@ -1,36 +1,68 @@
-// Login page. Demo only: checks the demo accounts in this browser. A real system must verify passwords on a server.
+// Login through the local Flask API. Keep the URL in sync with backend/app.py.
+const API = 'http://127.0.0.1:5001/api';
 const DASHBOARD = '../Dashboard/Dashboard.html';
-const DEMO = [
-  {u:'owner', p:'owner123', name:'Owner', role:'Owner'},
-  {u:'barista', p:'barista123', name:'Barista', role:'Barista'}
-];
-const card = document.getElementById('lf'), btn = card.querySelector('.go');
-const form = card, err = document.getElementById('err'), note = document.getElementById('notice'), pw = form.p;
+const card = document.getElementById('lf');
+const btn = card.querySelector('.go');
+const form = card;
+const err = document.getElementById('err');
+const note = document.getElementById('notice');
+const pw = form.p;
 
-if (sessionStorage.me) location.replace(DASHBOARD); // already logged in
+if (sessionStorage.me) location.replace(DASHBOARD);
 
 const msg = sessionStorage.notice;
-if (msg) { note.textContent = msg; note.hidden = false; sessionStorage.removeItem('notice'); }
+if (msg) {
+  note.textContent = msg;
+  note.hidden = false;
+  sessionStorage.removeItem('notice');
+}
 
-// Shake the card when a login fails.
-const fail = text => { err.textContent = text; card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); };
+const fail = text => {
+  err.textContent = text;
+  card.classList.remove('shake');
+  void card.offsetWidth;
+  card.classList.add('shake');
+};
 
-form.addEventListener('submit', e => {
-  e.preventDefault();
-  const u = form.u.value.trim(), p = pw.value;
+form.addEventListener('submit', async event => {
+  event.preventDefault();
+  const username = form.u.value.trim();
+  const password = pw.value;
   err.textContent = '';
-  if (!u || !p) {
-    fail(!u ? 'Enter your username.' : 'Enter your password.');
-    (!u ? form.u : pw).focus();
+
+  if (!username || !password) {
+    fail(!username ? 'Enter your username.' : 'Enter your password.');
+    (!username ? form.u : pw).focus();
     return;
   }
-  const acct = DEMO.find(x => x.u == u && x.p == p);
-  if (!acct) {
-    fail('Wrong username or password. Check both and try again.');
-    pw.value = ''; pw.focus();
-    return;
+
+  btn.disabled = true;
+  btn.textContent = 'Logging in...';
+  try {
+    const response = await fetch(`${API}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      fail(result.detail || 'Wrong username or password. Check both and try again.');
+      pw.value = '';
+      pw.focus();
+      return;
+    }
+
+    // Keep the shape expected by the existing navigation and API request helpers.
+    sessionStorage.me = JSON.stringify({
+      u: result.username,
+      name: result.fullname,
+      role: result.role
+    });
+    location.href = DASHBOARD;
+  } catch (error) {
+    fail('Cannot reach the local backend. Start it from the backend folder and try again.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Log in';
   }
-  sessionStorage.me = JSON.stringify(acct); // remember who logged in
-  btn.disabled = true; btn.textContent = 'Logging in...';
-  setTimeout(() => location.href = DASHBOARD, 450);
 });
