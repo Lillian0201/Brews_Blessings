@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Settings | Brews & Blessings</title>
+  <link rel="stylesheet" href="Settings.css">
+  <script src="../ui-dialogs.js"></script>
+  <script src="../nav.js"></script>
+</head>
+<body>
+
+  <main>
+    <header class="page-head">
+      <h1>Settings</h1>
+    </header>
+
+    <!-- Navigation Pills -->
+    <div class="pills">
+      <button type="button" class="pill active" data-tab="products">Products</button>
+      <button type="button" class="pill" data-tab="users">Users</button>
+      <button type="button" class="pill" data-tab="backups">Backups</button>
+    </div>
+
+    <!-- One section is shown at a time (tabs above) -->
+    <div class="settings-grid">
+
+      <!-- Card 1: Products -->
+      <section class="card" id="cardProducts">
+        <h2>Products</h2>
+        <button type="button" class="btn-card-action" id="btnAddProduct">+ Add Product</button>
+
+        <div class="filter-bar">
+          <div class="chips" id="catChips" role="group" aria-label="Filter by category"></div>
+          <input type="search" id="productSearch" placeholder="Search product" aria-label="Search products">
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Category</th>
+                <th>Classic / Grandeur / Hot</th>
+                <th>Packaging Cost</th>
+                <th>Available</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="productsTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+        <p class="empty" id="productsEmpty" hidden></p>
+      </section>
+
+      <!-- Card 2: Users -->
+      <section class="card" id="cardUsers">
+        <h2>Users</h2>
+        <button type="button" class="btn-card-action" id="btnAddUser">+ Add User</button>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Username</th>
+                <th>Role</th>
+                <th>Active</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+        <p class="empty" id="usersEmpty" hidden></p>
+      </section>
+
+      <!-- Card 3: Backups -->
+      <section class="card backup-card" id="cardBackups">
+        <div>
+          <h2>Backups</h2>
+          <div class="backup-last" id="backupStatusText">Last Backup: Oct 27, 2026</div>
+        </div>
+        <button type="button" class="btn-backup" id="btnBackupNow">Backup Now</button>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Add Product Modal -->
+  <div class="modal-overlay" id="productModal">
+    <div class="modal-content">
+      <h2 style="font-family: Georgia, serif; margin-top: 0;" id="prodModalTitle">Add Product</h2>
+      <form id="productForm">
+        <div class="form-group">
+          <label for="prodName">Product Name</label>
+          <input type="text" id="prodName" required placeholder="e.g. Vanilla Latte">
+        </div>
+        <div class="form-group">
+          <label for="prodCategory">Category</label>
+          <select id="prodCategory">
+            <option value="Coffee">Coffee</option>
+            <option value="Non-Coffee">Non-Coffee</option>
+            <option value="Refreshers">Refreshers</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="prodPrice">Classic price (₱)</label>
+          <input type="number" id="prodPrice" required min="0" step="0.01" placeholder="e.g. 120">
+        </div>
+        <div class="form-group">
+          <label for="prodGrandeurPrice">Grandeur price (₱)</label>
+          <input type="number" id="prodGrandeurPrice" required min="0" step="0.01" placeholder="e.g. 150">
+        </div>
+        <div class="form-group">
+          <label for="prodHotPrice">Hot price (₱, optional)</label>
+          <input type="number" id="prodHotPrice" min="0" step="0.01" placeholder="Leave blank if unavailable">
+        </div>
+        <div class="form-group">
+          <label for="prodPkg">Packaging Cost (₱)</label>
+          <input type="number" id="prodPkg" required min="0" step="0.01" placeholder="e.g. 8">
+        </div>
+        <div class="form-group">
+          <label class="check"><input type="checkbox" id="prodAvailable" checked> Available on the menu</label>
+        </div>
+        <p class="form-error" id="prodError" role="alert" hidden></p>
+        <div class="modal-btns">
+          <button type="button" class="btn-cancel" id="cancelProductBtn">Cancel</button>
+          <button type="submit" class="btn-submit" id="prodSubmit">Add</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add User Modal -->
+  <div class="modal-overlay" id="userModal">
+    <div class="modal-content">
+      <h2 style="font-family: Georgia, serif; margin-top: 0;">Add User</h2>
+      <form id="userForm">
+        <div class="form-group">
+          <label for="userName">Full Name</label>
+          <input type="text" id="userName" required placeholder="e.g. Maria Santos">
+        </div>
+        <div class="form-group">
+          <label for="userUsername">Username</label>
+          <input type="text" id="userUsername" required placeholder="e.g. barista2">
+        </div>
+        <div class="form-group">
+          <label for="userRole">Role</label>
+          <select id="userRole">
+            <option value="Barista">Barista (POS user)</option>
+            <option value="Owner">Owner</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="userPassword">Password</label>
+          <input type="password" id="userPassword" required minlength="6" autocomplete="new-password" placeholder="At least 6 characters">
+        </div>
+        <p class="form-error" id="userError" role="alert" hidden></p>
+        <div class="modal-btns">
+          <button type="button" class="btn-cancel" id="cancelUserBtn">Cancel</button>
+          <button type="submit" class="btn-submit" id="userSubmit">Add</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../api-client.js"></script>
+  <script src="Settings.js"></script>
+</body>
+</html>

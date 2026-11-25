@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en" class="page-loading">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Order/POS | Brews & Blessings</title>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600&family=Playfair+Display:wght@600;700&display=swap"
+    rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+
+  <script src="../nav.js" defer></script>
+  <script src="../api-client.js" defer></script>
+  <script src="../ui-dialogs.js" defer></script>
+  <script src="./images.js" defer></script>
+  <script src="./menu.js" defer></script>
+  <script src="./script.js" defer></script>
+</head>
+
+<script>
+  window.addEventListener("load", function () {
+    document.documentElement.classList.remove("page-loading");
+  });
+</script>
+
+<body>
+  <main>
+    <div class="top">
+      <h1>Order/POS</h1>
+<div class="pill" id="lowPill">Stock alerts: 0</div>    </div>
+
+    <div class="grid">
+      <div class="stack">
+        <section class="card">
+          <h2>Products</h2>
+          <div class="chips" id="chips" role="group" aria-label="Product categories"></div>
+          <div class="products" id="products"></div>
+        </section>
+
+        <section class="card">
+          <h2>Current orders</h2>
+          <p class="hint-text">Click an order to view its details or change its status.</p>
+          <div class="orders" id="orders"></div>
+        </section>
+      </div>
+
+      <section class="card">
+        <h2>Order form</h2>
+
+        <label for="customer">Customer name</label>
+        <input class="input" id="customer" type="text" maxlength="60" autocomplete="off">
+
+        <div class="row">
+          <div>
+            <label for="ono">Order no.</label>
+            <input class="input locked" id="ono" readonly aria-readonly="true" title="Generated automatically">
+          </div>
+          <div>
+            <label for="dt">Date and Time</label>
+            <input class="input locked" id="dt" readonly aria-readonly="true" title="Generated automatically">
+          </div>
+        </div>
+
+        <label class="items-label">Items</label>
+        <div class="items" id="items"></div>
+
+        <div class="line"><span>Subtotal</span><span id="subtotal">₱0</span></div>
+
+        <div class="line edit">
+          <label class="plain" for="discount">Discount (%)</label>
+          <div class="amt">
+            <small class="hint" id="discHint"></small>
+            <input class="input" id="discount" type="number" min="0" max="100" step="any" inputmode="decimal" placeholder="0">
+            <span class="unit" aria-hidden="true">%</span>
+          </div>
+        </div>
+
+    <div class="line edit note">
+      <label class="plain" for="discNote">Discount note</label>
+      <input class="input" id="discNote" type="text" maxlength="60" list="discOptions"
+        placeholder="e.g. Senior Citizen, PWD" autocomplete="off">
+      <datalist id="discOptions">
+        <option value="Senior Citizen"></option>
+        <option value="PWD"></option>
+        <option value="Promo"></option>
+      </datalist>
+    </div>
+
+    <div class="line total"><span>Total</span><span id="total">₱0</span></div>
+
+    <div class="row">
+      <div>
+        <label for="payment">Payment</label>
+        <input class="input locked" id="payment" value="Cash" readonly aria-readonly="true">
+      </div>
+      <div>
+        <label for="tendered">Amount tendered</label>
+        <div class="money">
+          <span aria-hidden="true">₱</span>
+          <input class="input" id="tendered" type="number" min="0" step="any" inputmode="decimal" placeholder="0">
+        </div>
+      </div>
+    </div>
+
+    <div class="change" id="change">Change: ₱0</div>
+    <p class="msg" id="formMsg" role="alert"></p>
+
+    <div class="actions">
+      <button type="button" class="btn cancel" id="cancelBtn">Cancel order</button>
+      <button type="button" class="btn pay" id="payBtn">Place order/Pay</button>
+    </div>
+    </section>
+    </div>
+  </main>
+
+  <!-- Customize a product -->
+  <dialog class="modal" id="customDialog" aria-labelledby="cName">
+    <div class="modal-body">
+      <div class="modal-head">
+        <div class="head-main">
+          <img class="c-img" id="cImg" alt="">
+          <div>
+            <h2 id="cName"></h2>
+            <p class="sub" id="cCat"></p>
+          </div>
+        </div>
+        <button type="button" class="x" data-close aria-label="Close">×</button>
+      </div>
+
+      <fieldset>
+        <legend>Size</legend>
+        <div class="opts" id="cSize"></div>
+      </fieldset>
+
+      <fieldset id="cShotsWrap">
+        <legend>Espresso shot</legend>
+        <div class="opts" id="cShots"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Sweetness</legend>
+        <div class="opts" id="cSweet"></div>
+      </fieldset>
+
+      <fieldset id="cIceWrap">
+        <legend>Ice</legend>
+        <div class="opts" id="cIce"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Other customization / notes</legend>
+        <textarea class="input" id="cNotes" rows="2" maxlength="120" placeholder="e.g. less milk, extra drizzle"></textarea>
+      </fieldset>
+
+      <div class="qty-row">
+        <span>Quantity</span>
+        <div class="stepper">
+          <button type="button" id="cMinus" aria-label="Decrease quantity">−</button>
+          <span id="cQty">1</span>
+          <button type="button" id="cPlus" aria-label="Increase quantity">+</button>
+        </div>
+      </div>
+
+      <div class="modal-foot">
+        <strong id="cTotal">₱0</strong>
+        <button type="button" class="btn pay" id="cAdd">Add to order</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- View / update an order -->
+  <dialog class="modal" id="orderDialog" aria-label="Order details">
+    <div class="modal-body" id="oBody"></div>
+  </dialog>
+
+  <div class="toast" id="toast" popover="manual" role="status" aria-live="polite"></div>
+
+</html>
