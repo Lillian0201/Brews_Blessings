@@ -86,7 +86,6 @@
     // Reset form
     document.getElementById('expAmount').value = '';
     document.getElementById('expDesc').value = '';
-    alert('Expense saved successfully!');
   });
 
   // ---------- COMPLETE MENU PRODUCT RECIPES ----------
