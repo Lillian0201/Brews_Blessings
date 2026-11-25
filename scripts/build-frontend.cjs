@@ -3,7 +3,7 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
 const output = path.join(root, 'dist', 'frontend');
-const files = ['index.html', 'nav.js', 'api-client.js'];
+const files = ['index.html', 'nav.js', 'api-client.js', 'ui-dialogs.js'];
 const directories = [
   'Dashboard',
   'Expense',

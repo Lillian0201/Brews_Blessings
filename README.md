@@ -87,10 +87,13 @@ host.
 3. Apply the schema and existing migrations to a new Supabase database in this
    order: `backend/schema.sql`, then
    `backend/migrations/001_transactions.sql`,
-   `backend/migrations/002_inventory_pos.sql`, and
-   `backend/migrations/003_auth_sessions.sql`. If the existing database already
-   has the prior schema and migrations, apply only
-   `003_auth_sessions.sql`.
+   `backend/migrations/002_inventory_pos.sql`,
+   `backend/migrations/003_auth_sessions.sql`,
+   `backend/migrations/003_pos_catalog_prices.sql`, and
+   `backend/migrations/004_default_grandeur_price.sql`. For an existing
+   database, apply whichever of these migrations are not already recorded as
+   applied: auth sessions are required for login, and the POS catalog
+   migrations are required by the current product/POS API.
 4. For a new database, run `backend/seed_products.sql` in Supabase's SQL
    Editor. Create initial accounts from a trusted machine: set `DATABASE_URL`,
    `BB_OWNER_PASSWORD`, and `BB_BARISTA_PASSWORD` as environment variables,
