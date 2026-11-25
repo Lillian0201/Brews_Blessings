@@ -3,7 +3,6 @@
   "services": {
     "frontend": {
       "root": ".",
-      "framework": "other",
       "buildCommand": "node scripts/build-frontend.cjs",
       "outputDirectory": "dist/frontend"
     },
