@@ -3,7 +3,7 @@ from transactions.models import SALE_STATUSES
 
 
 SALE_SELECT = """
-    SELECT o.orderid, o.ordernumber, o.customername, o.orderdatetime, o.discountamount,
+    SELECT o.orderid, o.ordernumber, o.customername, o.orderdatetime, o.discountamount, o.discountnote,
            o.servicecharge, o.totalamount, o.paymentmethod, o.orderstatus,
            o.voidreason, o.voidedat, vu.fullname AS voidedby,
            COALESCE((

@@ -1,6 +1,6 @@
 PRODUCT_SELECT = """
     SELECT productid, productname, category::text AS category, sellingprice,
-           productcost, packagingcost, isavailable
+           grandeurprice, hotprice, productcost, packagingcost, isavailable
     FROM product
 """
 
@@ -27,20 +27,22 @@ def name_exists(cur, name: str, ignore_id: int | None = None) -> bool:
     return cur.fetchone() is not None
 
 
-def add_product(cur, name: str, category: str, price, packaging: float, available: bool) -> int:
+def add_product(cur, name: str, category: str, price, grandeur_price, hot_price, packaging: float, available: bool) -> int:
     cur.execute(
-        """INSERT INTO product (productname, category, sellingprice, packagingcost, isavailable)
-           VALUES (%s, %s::product_category, %s, %s, %s) RETURNING productid""",
-        (name, category, price, packaging, available),
+        """INSERT INTO product
+           (productname, category, sellingprice, grandeurprice, hotprice, packagingcost, isavailable)
+           VALUES (%s, %s::product_category, %s, %s, %s, %s, %s) RETURNING productid""",
+        (name, category, price, grandeur_price, hot_price, packaging, available),
     )
     return cur.fetchone()["productid"]
 
 
-def update_product(cur, product_id: int, name: str, category: str, price, packaging, available: bool) -> None:
+def update_product(cur, product_id: int, name: str, category: str, price, grandeur_price, hot_price, packaging, available: bool) -> None:
     cur.execute(
         """UPDATE product SET productname = %s, category = %s::product_category, sellingprice = %s,
-                  packagingcost = %s, isavailable = %s WHERE productid = %s""",
-        (name, category, price, packaging, available, product_id),
+                  grandeurprice = %s, hotprice = %s, packagingcost = %s, isavailable = %s
+           WHERE productid = %s""",
+        (name, category, price, grandeur_price, hot_price, packaging, available, product_id),
     )
 
 

@@ -11,7 +11,6 @@
   const IDLE_MS = 10 * 60 * 1000; // auto-logout after 10 minutes of inactivity
 
   // ---------- Page file names (edit these) ----------
-  // Leave a page as '' until its file is ready; clicking it shows a "not connected yet" notice.
   const PAGES = {
     dash: '../Dashboard/Dashboard.html',
     orders: '../POS/pos.html',
@@ -51,7 +50,7 @@
 
   // ---------- Styles (injected once, scoped to .side so they never clash with a page's own CSS) ----------
   const CSS = `
-.side{width:220px;flex-shrink:0;background:#3b2518;color:#f3e6d6;padding:16px 12px;display:flex;flex-direction:column;gap:4px;font:14px/1.45 system-ui,sans-serif;box-sizing:border-box}
+.side{position:sticky;top:0;align-self:flex-start;height:100vh;height:100dvh;overflow-y:auto;width:220px;flex-shrink:0;background:#3b2518;color:#f3e6d6;padding:16px 12px;display:flex;flex-direction:column;gap:4px;font:14px/1.45 system-ui,sans-serif;box-sizing:border-box}
 .side *{box-sizing:border-box}
 .side .brandbox{display:flex;align-items:center;gap:10px;font:700 14px/1.45 Georgia,serif;padding:4px 6px 18px}
 .side .brandbox img{width:36px;height:36px;border-radius:50%;background:#fff;object-fit:cover;flex-shrink:0}
@@ -62,7 +61,7 @@
 .side a.on{background:#9a5c2c;color:#fff}
 .side a:focus-visible,.side button:focus-visible{outline:3px solid #fff;outline-offset:1px}
 .side .ic{width:16px;height:16px;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-@media(max-width:760px){.side{width:auto}.side nav,.side .foot{flex-direction:row;flex-wrap:wrap}.side a,.side button{width:auto}}
+@media(max-width:760px){.side{position:static;align-self:stretch;height:auto;overflow:visible;width:auto}.side nav,.side .foot{flex-direction:row;flex-wrap:wrap}.side a,.side button{width:auto}}
 @media(prefers-reduced-motion:reduce){.side a,.side button{transition:none}}
 `;
 
@@ -148,7 +147,7 @@
     const item = (n) => {
       const href = PAGES[n[0]];
       const on = n[0] === active;
-      return `<a href="${href ? esc(href) : '#'}"${href ? '' : ' data-soon="1"'} class="${on ? 'on' : ''}"${on ? ' aria-current="page"' : ''}>${ico(n[0])}${esc(n[1])}</a>`;
+      return `<a href="${esc(href)}" class="${on ? 'on' : ''}"${on ? ' aria-current="page"' : ''}>${ico(n[0])}${esc(n[1])}</a>`;
     };
 
     return `<aside class="side">
@@ -190,15 +189,6 @@
     if (out) {
       e.preventDefault();
       logout();
-      return;
-    }
-
-    // Pages that are not connected yet
-    const soon = e.target.closest('.side a[data-soon]');
-
-    if (soon) {
-      e.preventDefault();
-      alert('This page is not connected yet.');
       return;
     }
 

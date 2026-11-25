@@ -61,6 +61,7 @@ def serialize_sale(row: dict, refunds: list[dict]) -> dict:
         "items": items,
         "subtotal": subtotal,
         "discount": num(row["discountamount"]),
+        "discountNote": row.get("discountnote") or "",
         "serviceCharge": num(row["servicecharge"]),
         "total": num(row["totalamount"]),
         "payment": row["paymentmethod"],

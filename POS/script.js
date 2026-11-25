@@ -8,7 +8,7 @@
   const API = BBAPI.base;
   const $ = (id) => document.getElementById(id);
   const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
-  const peso = (n) => "₱" + round2(n).toLocaleString("en-PH", {
+  const peso = (n) => "\u20B1" + round2(n).toLocaleString("en-PH", {
     minimumFractionDigits: Number.isInteger(round2(n)) ? 0 : 2,
     maximumFractionDigits: 2
   });
@@ -34,11 +34,26 @@
   }
 
   let toastTimer;
-  function toast(message) {
-    $("toast").textContent = message;
-    $("toast").classList.add("show");
+  // The toast is a popover, so it sits in the browser's top layer and stays
+  // visible even while a modal dialog is open.
+  function toast(message, type) {
+    const el = $("toast");
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => $("toast").classList.remove("show"), 2200);
+    el.textContent = message;
+    el.classList.toggle("ok", type === "ok");
+    if (typeof el.showPopover === "function") {
+      try { if (!el.matches(":popover-open")) el.showPopover(); } catch (e) { /* ignore */ }
+    }
+    requestAnimationFrame(() => el.classList.add("show"));
+    toastTimer = setTimeout(() => {
+      el.classList.remove("show");
+      setTimeout(() => {
+        if (el.classList.contains("show")) return;
+        if (typeof el.hidePopover === "function") {
+          try { el.hidePopover(); } catch (e) { /* ignore */ }
+        }
+      }, 300);
+    }, 3500);
   }
 
   let backendProducts = [];
@@ -55,6 +70,20 @@
   function backendProductId(name) {
     const product = backendProducts.find((item) => item.name === name);
     return product ? product.id : null;
+  }
+
+  function currentMenu() {
+    return backendProducts.map((product) => {
+      const saved = MENU.find((entry) => entry.name === product.name);
+      const category = saved ? CATEGORIES.find((entry) => entry.id === saved.cat) :
+        CATEGORIES.find((entry) => entry.label === product.category);
+      return {
+        cat: category ? category.id : "noncoffee",
+        name: product.name,
+        prices: product.prices || { Classic: product.price },
+        espresso: saved ? !!category.espresso : product.category === "Coffee"
+      };
+    }).filter((entry) => entry.prices && entry.prices.Classic != null);
   }
 
   async function refreshAlerts() {
@@ -75,11 +104,11 @@
   }
 
   function renderProducts() {
-    $("products").innerHTML = MENU
+    const menu = currentMenu();
+    $("products").innerHTML = menu
       .filter((item) => activeCat === "all" || item.cat === activeCat)
-      .filter((item) => backendProductId(item.name) !== null)
       .map((item) => {
-        const index = MENU.indexOf(item);
+        const index = menu.indexOf(item);
         return `<button type="button" class="product" data-i="${index}">
           <img src="${IMGS[item.name] || ""}" alt="${esc(item.name)}" loading="lazy">
           <b>${esc(item.name)}</b>
@@ -93,7 +122,7 @@
 
   function openCustomize(item) {
     current = item;
-    currentCat = CATEGORIES.find((category) => category.id === item.cat);
+    currentCat = CATEGORIES.find((category) => category.id === item.cat) || { label: "Product", espresso: item.espresso };
     const sizes = SIZES.filter((size) => item.prices[size] != null);
     sel.size = sizes[0];
     sel.shots = SHOTS[1];
@@ -162,7 +191,7 @@
   });
   $("products").addEventListener("click", (event) => {
     const button = event.target.closest(".product");
-    if (button) openCustomize(MENU[Number(button.dataset.i)]);
+    if (button) openCustomize(currentMenu()[Number(button.dataset.i)]);
   });
   [customDlg, orderDlg].forEach((dialog) => {
     dialog.addEventListener("click", (event) => {
@@ -208,7 +237,7 @@
     $("discHint").textContent = totalsValue.discount > 0 ? "− " + peso(totalsValue.discount) : "";
     const tendered = parseFloat($("tendered").value);
     if (!cart.length || $("tendered").value.trim() === "" || !isFinite(tendered)) {
-      $("change").textContent = "Change: ₱0";
+      $("change").textContent = "Change: " + "\u20B1" + "0";
       $("change").classList.remove("short");
     } else if (tendered >= totalsValue.total) {
       $("change").textContent = "Change: " + peso(tendered - totalsValue.total);
@@ -243,6 +272,7 @@
     cart = [];
     $("customer").value = "";
     $("discount").value = "";
+    $("discNote").value = "";
     $("payment").value = "Cash";
     $("tendered").value = "";
     $("ono").value = "AUTO";
@@ -255,6 +285,12 @@
     setMsg("");
     if (!cart.length) return setMsg("Add at least one item to the order.");
     const totalsValue = totals();
+    const discountPercent = parseFloat($("discount").value) || 0;
+    const discountNote = $("discNote").value.trim();
+    if (discountPercent > 0 && !discountNote) {
+      $("discNote").focus();
+      return setMsg("Enter a discount note (e.g. Senior Citizen, PWD).");
+    }
     const rawTendered = $("tendered").value.trim();
     const tendered = rawTendered === "" ? totalsValue.total : parseFloat(rawTendered);
     if (!isFinite(tendered) || tendered < totalsValue.total) {
@@ -273,24 +309,25 @@
           ice: item.ice,
           notes: item.notes
         })),
-        discountPercent: parseFloat($("discount").value) || 0,
+        discountPercent,
+        discountNote: discountPercent > 0 ? discountNote : "",
         payment: $("payment").value,
         tendered,
         customer: $("customer").value.trim()
       });
       resetForm();
-      await refreshOrders();
-      await refreshAlerts();
-      toast("Order placed");
+      toast("\u2713 Order placed", "ok");
+      refreshOrders();
+      refreshAlerts();
     } catch (error) {
       setMsg(error.message);
     }
   }
 
   $("payBtn").addEventListener("click", placeOrder);
-  $("cancelBtn").addEventListener("click", () => {
+  $("cancelBtn").addEventListener("click", async () => {
     const dirty = cart.length || $("customer").value.trim();
-    if (dirty && !confirm("Clear this order?")) return;
+    if (dirty && !(await BBDialog.confirm("Clear this order?", "The current order will be cleared."))) return;
     resetForm();
   });
 
@@ -326,7 +363,7 @@
       </div>
       <div>${items}</div>
       <div class="d-lines">
-        ${order.discount > 0 ? `<div class="line"><span>Discount</span><span>− ${peso(order.discount)}</span></div>` : ""}
+        ${order.discount > 0 ? `<div class="line"><span>Discount${order.discountNote ? " (" + esc(order.discountNote) + ")" : ""}</span><span>− ${peso(order.discount)}</span></div>` : ""}
         <div class="line total"><span>Total</span><span>${peso(order.total)}</span></div>
         <div class="line"><span>Payment</span><span>${esc(order.payment)}</span></div>
         <div class="line"><span>Amount tendered</span><span>${peso(order.tendered)}</span></div>
@@ -356,8 +393,17 @@
     const status = button.dataset.status;
     let reason;
     if (status === "Cancelled") {
-      reason = prompt("Reason for cancelling:");
-      if (!reason || !reason.trim()) return;
+      reason = await BBDialog.ask("Cancel order", {
+        label: "Reason for cancelling",
+        placeholder: "Enter a reason",
+        okText: "Continue"
+      });
+      if (reason === null) return;
+      if (!reason.trim()) {
+        await BBDialog.notify("Missing reason", "Enter a reason for cancelling the order.");
+        return;
+      }
+      reason = reason.trim();
     }
     try {
       await api("PATCH", `/orders/${viewing}/status`, { status, reason });
@@ -365,7 +411,7 @@
       await refreshAlerts();
       const updated = orders.find((order) => order.id === viewing);
       if (updated) renderOrderDialog(updated);
-      toast("Order status updated");
+      toast("Order status updated", "ok");
     } catch (error) {
       toast(error.message);
     }

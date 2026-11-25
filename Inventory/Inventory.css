@@ -117,6 +117,19 @@ table { width: 100%; border-collapse: collapse; font-size: 13px; }
 th, td { padding: 9px 8px; text-align: center; border-bottom: 1px solid var(--border); white-space: nowrap; }
 th { background: #efe2d2; font-weight: 600; }
 .empty { color: var(--muted); padding: 16px; }
+#itemRows tr[data-item-id] { cursor: pointer; }
+#itemRows tr[data-item-id]:hover { background: #fbf2e4; }
+#itemRows tr[data-item-id].selected > td { background: #f5e6cd; }
+#itemRows tr[data-item-id].selected > td {
+  box-shadow: inset 0 2px 0 #9a5c2c, inset 0 -2px 0 #9a5c2c;
+}
+#itemRows tr[data-item-id].selected > td:first-child {
+  box-shadow: inset 2px 0 0 #9a5c2c, inset 0 2px 0 #9a5c2c, inset 0 -2px 0 #9a5c2c;
+}
+#itemRows tr[data-item-id].selected > td:last-child {
+  box-shadow: inset -2px 0 0 #9a5c2c, inset 0 2px 0 #9a5c2c, inset 0 -2px 0 #9a5c2c;
+}
+#itemRows tr[data-item-id]:focus-visible { outline: 2px solid #9a5c2c; outline-offset: -2px; }
 button.link { background: none; border: none; color: var(--active); cursor: pointer; text-decoration: underline; }
 
 .badge { padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
