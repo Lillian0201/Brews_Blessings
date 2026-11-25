@@ -76,6 +76,17 @@
           </div>
         </div>
 
+    <div class="line edit note">
+      <label class="plain" for="discNote">Discount note</label>
+      <input class="input" id="discNote" type="text" maxlength="60" list="discOptions"
+        placeholder="e.g. Senior Citizen, PWD" autocomplete="off">
+      <datalist id="discOptions">
+        <option value="Senior Citizen"></option>
+        <option value="PWD"></option>
+        <option value="Promo"></option>
+      </datalist>
+    </div>
+
     <div class="line total"><span>Total</span><span id="total">₱0</span></div>
 
     <div class="row">
@@ -163,6 +174,6 @@
     <div class="modal-body" id="oBody"></div>
   </dialog>
 
-  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="toast" id="toast" popover="manual" role="status" aria-live="polite"></div>
 
 </html>

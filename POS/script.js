@@ -34,11 +34,26 @@
   }
 
   let toastTimer;
-  function toast(message) {
-    $("toast").textContent = message;
-    $("toast").classList.add("show");
+  // The toast is a popover, so it sits in the browser's top layer and stays
+  // visible even while a modal dialog is open.
+  function toast(message, type) {
+    const el = $("toast");
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => $("toast").classList.remove("show"), 2200);
+    el.textContent = message;
+    el.classList.toggle("ok", type === "ok");
+    if (typeof el.showPopover === "function") {
+      try { if (!el.matches(":popover-open")) el.showPopover(); } catch (e) { /* ignore */ }
+    }
+    requestAnimationFrame(() => el.classList.add("show"));
+    toastTimer = setTimeout(() => {
+      el.classList.remove("show");
+      setTimeout(() => {
+        if (el.classList.contains("show")) return;
+        if (typeof el.hidePopover === "function") {
+          try { el.hidePopover(); } catch (e) { /* ignore */ }
+        }
+      }, 300);
+    }, 3500);
   }
 
   let backendProducts = [];
@@ -243,6 +258,7 @@
     cart = [];
     $("customer").value = "";
     $("discount").value = "";
+    $("discNote").value = "";
     $("payment").value = "Cash";
     $("tendered").value = "";
     $("ono").value = "AUTO";
@@ -255,6 +271,12 @@
     setMsg("");
     if (!cart.length) return setMsg("Add at least one item to the order.");
     const totalsValue = totals();
+    const discountPercent = parseFloat($("discount").value) || 0;
+    const discountNote = $("discNote").value.trim();
+    if (discountPercent > 0 && !discountNote) {
+      $("discNote").focus();
+      return setMsg("Enter a discount note (e.g. Senior Citizen, PWD).");
+    }
     const rawTendered = $("tendered").value.trim();
     const tendered = rawTendered === "" ? totalsValue.total : parseFloat(rawTendered);
     if (!isFinite(tendered) || tendered < totalsValue.total) {
@@ -273,15 +295,16 @@
           ice: item.ice,
           notes: item.notes
         })),
-        discountPercent: parseFloat($("discount").value) || 0,
+        discountPercent,
+        discountNote: discountPercent > 0 ? discountNote : "",
         payment: $("payment").value,
         tendered,
         customer: $("customer").value.trim()
       });
       resetForm();
-      await refreshOrders();
-      await refreshAlerts();
-      toast("Order placed");
+      toast("\u2713 Order placed", "ok");
+      refreshOrders();
+      refreshAlerts();
     } catch (error) {
       setMsg(error.message);
     }
@@ -326,7 +349,7 @@
       </div>
       <div>${items}</div>
       <div class="d-lines">
-        ${order.discount > 0 ? `<div class="line"><span>Discount</span><span>− ${peso(order.discount)}</span></div>` : ""}
+        ${order.discount > 0 ? `<div class="line"><span>Discount${order.discountNote ? " (" + esc(order.discountNote) + ")" : ""}</span><span>− ${peso(order.discount)}</span></div>` : ""}
         <div class="line total"><span>Total</span><span>${peso(order.total)}</span></div>
         <div class="line"><span>Payment</span><span>${esc(order.payment)}</span></div>
         <div class="line"><span>Amount tendered</span><span>${peso(order.tendered)}</span></div>
@@ -374,7 +397,7 @@
       await refreshAlerts();
       const updated = orders.find((order) => order.id === viewing);
       if (updated) renderOrderDialog(updated);
-      toast("Order status updated");
+      toast("Order status updated", "ok");
     } catch (error) {
       toast(error.message);
     }

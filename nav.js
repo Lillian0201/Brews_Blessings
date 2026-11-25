@@ -50,7 +50,7 @@
 
   // ---------- Styles (injected once, scoped to .side so they never clash with a page's own CSS) ----------
   const CSS = `
-.side{width:220px;flex-shrink:0;background:#3b2518;color:#f3e6d6;padding:16px 12px;display:flex;flex-direction:column;gap:4px;font:14px/1.45 system-ui,sans-serif;box-sizing:border-box}
+.side{position:sticky;top:0;align-self:flex-start;height:100vh;height:100dvh;overflow-y:auto;width:220px;flex-shrink:0;background:#3b2518;color:#f3e6d6;padding:16px 12px;display:flex;flex-direction:column;gap:4px;font:14px/1.45 system-ui,sans-serif;box-sizing:border-box}
 .side *{box-sizing:border-box}
 .side .brandbox{display:flex;align-items:center;gap:10px;font:700 14px/1.45 Georgia,serif;padding:4px 6px 18px}
 .side .brandbox img{width:36px;height:36px;border-radius:50%;background:#fff;object-fit:cover;flex-shrink:0}
@@ -61,7 +61,7 @@
 .side a.on{background:#9a5c2c;color:#fff}
 .side a:focus-visible,.side button:focus-visible{outline:3px solid #fff;outline-offset:1px}
 .side .ic{width:16px;height:16px;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-@media(max-width:760px){.side{width:auto}.side nav,.side .foot{flex-direction:row;flex-wrap:wrap}.side a,.side button{width:auto}}
+@media(max-width:760px){.side{position:static;align-self:stretch;height:auto;overflow:visible;width:auto}.side nav,.side .foot{flex-direction:row;flex-wrap:wrap}.side a,.side button{width:auto}}
 @media(prefers-reduced-motion:reduce){.side a,.side button{transition:none}}
 `;
 

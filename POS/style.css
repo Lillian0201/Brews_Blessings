@@ -215,6 +215,7 @@ label.plain { margin: 0; color: inherit; font-size: 15px }
 .amt input.input { width: 110px; text-align: right }
 .unit { width: 18px; text-align: center; color: var(--brown); font-size: 15px }
 .hint { font-size: 12px; color: var(--brown) }
+.line.note .input { width: 220px; max-width: 60%; padding: 8px 10px }
 
 .money { position: relative }
 .money span { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--brown) }
@@ -306,20 +307,28 @@ legend { font-size: 14px; color: var(--brown); margin-bottom: 8px; padding: 0 }
 /* Toast */
 .toast {
   position: fixed;
+  inset: auto;
   left: 50%;
-  bottom: 24px;
+  top: auto;
+  bottom: 28px;
+  margin: 0;
+  border: 0;
+  overflow: visible;
   transform: translate(-50%, 20px);
   background: var(--brown-d);
   color: var(--cream);
-  padding: 12px 22px;
+  padding: 14px 28px;
   border-radius: 99px;
-  font-size: 14px;
+  font-size: 16px;
+  font-weight: 500;
+  box-shadow: 0 8px 24px rgba(43, 26, 16, .35);
   opacity: 0;
   pointer-events: none;
   transition: opacity .25s, transform .25s;
   z-index: 1000
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0) }
+.toast.ok { background: #3d5a2b; color: #fff }
 
 @media (max-width: 1100px) {
   .grid { grid-template-columns: minmax(0, 1fr) }
