@@ -1,0 +1,15 @@
+[project]
+name = "brews-blessings-backend"
+version = "0.1.0"
+description = "Brews & Blessings FastAPI backend"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.115",
+    "psycopg2-binary>=2.9.10",
+    "python-dotenv>=1.0",
+    "uvicorn[standard]>=0.30",
+    "werkzeug>=3.0",
+]
+
+[tool.uv]
+package = false

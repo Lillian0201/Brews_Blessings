@@ -26,19 +26,17 @@ API terminal running while using the app.
    `.env` is ignored by Git. Replace the example database password and set
    private account passwords on your device.
 
-3. Create a virtual environment and install dependencies:
+3. Create a virtual environment and install dependencies with uv:
 
    ```powershell
    cd "<project folder>\backend"
-   py -m venv .venv
-   .\.venv\Scripts\Activate.ps1
-   python -m pip install -r requirements.txt
+   uv sync
    ```
 
 4. Start the API:
 
    ```powershell
-   python main.py
+   uv run python main.py
    ```
 
    Startup automatically creates the configured database when needed, applies
