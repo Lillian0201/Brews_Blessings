@@ -63,6 +63,7 @@
   const customDlg = $("customDialog");
   const orderDlg = $("orderDialog");
   let viewing = null;
+  let viewingOrder = null;
   let current = null;
   let currentCat = null;
   const sel = { size: "", shots: "1 Shot", sweet: "100%", ice: "Regular ice", qty: 1 };
@@ -333,8 +334,7 @@
 
   async function refreshOrders() {
     try {
-      const rows = await api("GET", "/orders");
-      orders = await Promise.all(rows.map(async (row) => api("GET", `/orders/${row.id}`)));
+      orders = await api("GET", "/orders");
       renderOrders();
     } catch (error) {
       setMsg(error.message);
@@ -377,14 +377,19 @@
       <div class="modal-foot"><span></span><button type="button" class="btn cancel" data-close>Close</button></div>`;
   }
 
-  $("orders").addEventListener("click", (event) => {
+  $("orders").addEventListener("click", async (event) => {
     const button = event.target.closest(".order-row");
     if (!button) return;
-    const order = orders.find((entry) => entry.orderNumber === button.dataset.no);
-    if (!order) return;
-    viewing = order.id;
-    renderOrderDialog(order);
-    orderDlg.showModal();
+    const summary = orders.find((entry) => entry.orderNumber === button.dataset.no);
+    if (!summary) return;
+    try {
+      viewingOrder = await api("GET", `/orders/${summary.id}`);
+      viewing = viewingOrder.id;
+      renderOrderDialog(viewingOrder);
+      orderDlg.showModal();
+    } catch (error) {
+      toast(error.message);
+    }
   });
 
   orderDlg.addEventListener("click", async (event) => {
@@ -409,8 +414,11 @@
       await api("PATCH", `/orders/${viewing}/status`, { status, reason });
       await refreshOrders();
       await refreshAlerts();
-      const updated = orders.find((order) => order.id === viewing);
-      if (updated) renderOrderDialog(updated);
+      if (viewingOrder && viewingOrder.id === viewing) {
+        viewingOrder.status = status;
+        if (status === "Cancelled") viewingOrder.cancelReason = reason;
+        renderOrderDialog(viewingOrder);
+      }
       toast("Order status updated", "ok");
     } catch (error) {
       toast(error.message);
