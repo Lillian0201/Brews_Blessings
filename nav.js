@@ -11,7 +11,6 @@
   const IDLE_MS = 10 * 60 * 1000; // auto-logout after 10 minutes of inactivity
 
   // ---------- Page file names (edit these) ----------
-  // Leave a page as '' until its file is ready; clicking it shows a "not connected yet" notice.
   const PAGES = {
     dash: '../Dashboard/Dashboard.html',
     orders: '../POS/pos.html',
@@ -139,7 +138,7 @@
     const item = (n) => {
       const href = PAGES[n[0]];
       const on = n[0] === active;
-      return `<a href="${href ? esc(href) : '#'}"${href ? '' : ' data-soon="1"'} class="${on ? 'on' : ''}"${on ? ' aria-current="page"' : ''}>${ico(n[0])}${esc(n[1])}</a>`;
+      return `<a href="${esc(href)}" class="${on ? 'on' : ''}"${on ? ' aria-current="page"' : ''}>${ico(n[0])}${esc(n[1])}</a>`;
     };
 
     return `<aside class="side">
@@ -181,15 +180,6 @@
     if (out) {
       e.preventDefault();
       logout();
-      return;
-    }
-
-    // Pages that are not connected yet
-    const soon = e.target.closest('.side a[data-soon]');
-
-    if (soon) {
-      e.preventDefault();
-      alert('This page is not connected yet.');
       return;
     }
 
