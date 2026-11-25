@@ -16,7 +16,7 @@
 
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-  // Temporary login: the backend reads the username from this header (see backend/transactions.py).
+  // Temporary login: the backend reads the username from this header.
   async function api(method, path, body) {
     let res;
     try {
@@ -26,7 +26,7 @@
         body: body ? JSON.stringify(body) : undefined
       });
     } catch {
-      throw new Error("Can't reach the server. Is the backend running (python app.py)?");
+      throw new Error("Can't reach the server. Is the backend running (python main.py)?");
     }
     let data = null;
     try { data = await res.json(); } catch { /* no body */ }

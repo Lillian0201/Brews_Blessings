@@ -1,176 +1,116 @@
 (() => {
   "use strict";
 
-  // Check login and load the shared POS sidebar.
-  if (!window.BBNav) {
-    console.error("BBNav is not loaded. Check the nav.js script path.");
-    return;
-  }
-
+  if (!window.BBNav) return;
   const me = BBNav.mount("orders");
-
   if (!me) return;
-  /* ---------- Helpers ---------- */
+
+  const API = "http://127.0.0.1:5001/api";
   const $ = (id) => document.getElementById(id);
   const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
-  const peso = (n) => {
-    n = round2(n);
-    return "₱" + n.toLocaleString("en-PH", {
-      minimumFractionDigits: Number.isInteger(n) ? 0 : 2,
-      maximumFractionDigits: 2
-    });
-  };
-  const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
+  const peso = (n) => "₱" + round2(n).toLocaleString("en-PH", {
+    minimumFractionDigits: Number.isInteger(round2(n)) ? 0 : 2,
+    maximumFractionDigits: 2
+  });
+  const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  const fmtShort = (d) => {
-    const h = d.getHours();
-    return (d.getMonth() + 1) + "/" + d.getDate() + " " + (h % 12 || 12) + ":" +
-      String(d.getMinutes()).padStart(2, "0") + " " + (h >= 12 ? "PM" : "AM");
-  };
-  const fmtLong = (d) => d.toLocaleString("en-PH", {
+  const fmtShort = (value) => new Date(value).toLocaleString("en-PH", {
+    month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit"
+  });
+  const fmtLong = (value) => new Date(value).toLocaleString("en-PH", {
     month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit"
   });
   const IMGS = window.IMG || {};
-  const custText = (i) => [
-    i.size, i.shots, "Sweetness " + i.sweetness, i.ice, i.notes ? "Notes: " + i.notes : ""
-  ].filter(Boolean).join(" · ");
+
+  async function api(method, path, body) {
+    const response = await fetch(API + path, {
+      method,
+      headers: { "X-Username": me.u || "", ...(body ? { "Content-Type": "application/json" } : {}) },
+      body: body ? JSON.stringify(body) : undefined
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) throw new Error((data && data.detail) || `Server error (${response.status}).`);
+    return data;
+  }
 
   let toastTimer;
-  function toast(msg) {
-    const t = $("toast");
-    t.textContent = msg;
-    t.classList.add("show");
+  function toast(message) {
+    $("toast").textContent = message;
+    $("toast").classList.add("show");
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => t.classList.remove("show"), 2200);
+    toastTimer = setTimeout(() => $("toast").classList.remove("show"), 2200);
   }
 
-  /* ---------- Orders storage (saved in this browser) ---------- */
-  const STORE_KEY = "bb_pos_orders_v1";
-
-  function makeOrder(o) {
-    const subtotal = round2(o.items.reduce((s, i) => s + i.price * i.qty, 0));
-    const total = round2(subtotal - o.discount);
-    return Object.assign({}, o, {
-      subtotal, total, change: round2(Math.max(0, o.tendered - total))
-    });
-  }
-
-  function seedOrders() {
-    const now = Date.now(), min = 60000;
-    return [
-      makeOrder({
-        no: "001", customer: "Anna", createdAt: now - 95 * min, status: "Pending",
-        items: [{ name: "Caramel Latte", size: "Classic", shots: "1 Shot", sweetness: "50%", ice: "Less ice", price: 120, qty: 2 }],
-        discount: 0, payment: "Cash", tendered: 300
-      }),
-      makeOrder({
-        no: "002", customer: "Ben", createdAt: now - 60 * min, status: "Completed",
-        items: [
-          { name: "Americano", size: "Grandeur", shots: "2 Shots", sweetness: "0%", ice: "Regular ice", price: 110, qty: 1 },
-          { name: "Blueberry Fizz", size: "Classic", shots: null, sweetness: "100%", ice: "Regular ice", price: 69, qty: 1 }
-        ],
-        discount: 0, payment: "GCash", tendered: 179
-      }),
-      makeOrder({
-        no: "003", customer: "Carla", createdAt: now - 30 * min, status: "Cancelled",
-        items: [{ name: "Matcha Milk", size: "Hot", shots: null, sweetness: "50%", ice: null, price: 115, qty: 1 }],
-        discount: 0, payment: "Cash", tendered: 200
-      })
-    ];
-  }
-
-  function loadOrders() {
-    try {
-      const raw = localStorage.getItem(STORE_KEY);
-      if (raw) {
-        const arr = JSON.parse(raw);
-        if (Array.isArray(arr)) return arr;
-      }
-    } catch (e) { /* ignore */ }
-    return seedOrders();
-  }
-
-  function saveOrders() {
-    try { localStorage.setItem(STORE_KEY, JSON.stringify(orders)); } catch (e) { /* ignore */ }
-  }
-
-  let orders = loadOrders();
+  let backendProducts = [];
   let cart = [];
+  let orders = [];
   let activeCat = "all";
+  const customDlg = $("customDialog");
+  const orderDlg = $("orderDialog");
+  let viewing = null;
+  let current = null;
+  let currentCat = null;
+  const sel = { size: "", shots: "1 Shot", sweet: "100%", ice: "Regular ice", qty: 1 };
 
-  const nextOrderNo = () => {
-    const max = orders.reduce((m, o) => Math.max(m, parseInt(o.no, 10) || 0), 0);
-    return String(max + 1).padStart(3, "0");
-  };
-
-  // NEW: keep the header pill in sync with the shared inventory
-  function refreshAlerts() {
-    $("lowPill").textContent = "Stock alerts: " + BBInventory.alertCount();
+  function backendProductId(name) {
+    const product = backendProducts.find((item) => item.name === name);
+    return product ? product.id : null;
   }
 
-  /* ---------- Products + filter ---------- */
+  async function refreshAlerts() {
+    try {
+      const inventory = await api("GET", "/inventory");
+      const alerts = inventory.filter((item) => item.status !== "Available").length;
+      $("lowPill").textContent = "Stock alerts: " + alerts;
+    } catch (error) {
+      $("lowPill").textContent = "Stock alerts: unavailable";
+    }
+  }
+
   function renderChips() {
-    const cats = [{ id: "all", label: "All" }].concat(CATEGORIES);
-    $("chips").innerHTML = cats.map((c) =>
-      `<button type="button" class="chip${c.id === activeCat ? " active" : ""}" data-cat="${c.id}" aria-pressed="${c.id === activeCat}">${esc(c.label)}</button>`
+    const categories = [{ id: "all", label: "All" }].concat(CATEGORIES);
+    $("chips").innerHTML = categories.map((category) =>
+      `<button type="button" class="chip${category.id === activeCat ? " active" : ""}" data-cat="${category.id}" aria-pressed="${category.id === activeCat}">${esc(category.label)}</button>`
     ).join("");
   }
 
-  // Each tile: photo, name, and the product's price (Classic).
   function renderProducts() {
     $("products").innerHTML = MENU
-      .map((m, i) => ({ m, i }))
-      .filter(({ m }) => activeCat === "all" || m.cat === activeCat)
-      .map(({ m, i }) =>
-        `<button type="button" class="product" data-i="${i}">
-          <img src="${IMGS[m.name] || ""}" alt="${esc(m.name)}" loading="lazy">
-          <b>${esc(m.name)}</b>
-          <span class="price">${peso(m.prices.Classic)}</span>
-        </button>`
-      ).join("");
+      .filter((item) => activeCat === "all" || item.cat === activeCat)
+      .filter((item) => backendProductId(item.name) !== null)
+      .map((item) => {
+        const index = MENU.indexOf(item);
+        return `<button type="button" class="product" data-i="${index}">
+          <img src="${IMGS[item.name] || ""}" alt="${esc(item.name)}" loading="lazy">
+          <b>${esc(item.name)}</b>
+          <span class="price">${peso(item.prices.Classic)}</span>
+        </button>`;
+      }).join("");
   }
-
-  $("chips").addEventListener("click", (e) => {
-    const b = e.target.closest(".chip");
-    if (!b) return;
-    activeCat = b.dataset.cat;
-    renderChips();
-    renderProducts();
-  });
-
-  $("products").addEventListener("click", (e) => {
-    const b = e.target.closest(".product");
-    if (b) openCustomize(MENU[+b.dataset.i]);
-  });
-
-  /* ---------- Customize dialog ---------- */
-  const customDlg = $("customDialog");
-  let current = null, currentCat = null;
-  const sel = { size: "", shots: "1 Shot", sweet: "100%", ice: "Regular ice", qty: 1 };
 
   const radio = (name, value, label, checked) =>
     `<label class="opt"><input type="radio" name="${name}" value="${esc(value)}"${checked ? " checked" : ""}><span>${esc(label)}</span></label>`;
 
   function openCustomize(item) {
     current = item;
-    currentCat = CATEGORIES.find((c) => c.id === item.cat);
-    const sizes = SIZES.filter((s) => item.prices[s] != null);
+    currentCat = CATEGORIES.find((category) => category.id === item.cat);
+    const sizes = SIZES.filter((size) => item.prices[size] != null);
     sel.size = sizes[0];
     sel.shots = SHOTS[1];
     sel.sweet = "100%";
     sel.ice = ICE[0];
     sel.qty = 1;
-
     $("cName").textContent = item.name;
     $("cCat").textContent = currentCat.label;
     $("cImg").src = IMGS[item.name] || "";
     $("cImg").hidden = !IMGS[item.name];
-    $("cSize").innerHTML = sizes.map((s) =>
-      radio("size", s, s + " · " + peso(item.prices[s]), s === sel.size)).join("");
+    $("cSize").innerHTML = sizes.map((size) =>
+      radio("size", size, size + " · " + peso(item.prices[size]), size === sel.size)).join("");
     $("cShotsWrap").hidden = !currentCat.espresso;
-    $("cShots").innerHTML = SHOTS.map((s) => radio("shots", s, s, s === sel.shots)).join("");
-    $("cSweet").innerHTML = SWEETNESS.map((s) => radio("sweet", s.value, s.label, s.value === sel.sweet)).join("");
-    $("cIce").innerHTML = ICE.map((s) => radio("ice", s, s, s === sel.ice)).join("");
+    $("cShots").innerHTML = SHOTS.map((shot) => radio("shots", shot, shot, shot === sel.shots)).join("");
+    $("cSweet").innerHTML = SWEETNESS.map((sweet) =>
+      radio("sweet", sweet.value, sweet.label, sweet.value === sel.sweet)).join("");
+    $("cIce").innerHTML = ICE.map((ice) => radio("ice", ice, ice, ice === sel.ice)).join("");
     $("cNotes").value = "";
     updateCustomTotal();
     customDlg.showModal();
@@ -179,23 +119,28 @@
   function updateCustomTotal() {
     $("cTotal").textContent = peso(current.prices[sel.size] * sel.qty);
     $("cQty").textContent = sel.qty;
-    $("cIceWrap").hidden = sel.size === "Hot"; // no ice option for hot drinks
+    $("cIceWrap").hidden = sel.size === "Hot";
   }
 
-  customDlg.addEventListener("change", (e) => {
-    const n = e.target.name;
-    if (n === "size") sel.size = e.target.value;
-    else if (n === "shots") sel.shots = e.target.value;
-    else if (n === "sweet") sel.sweet = e.target.value;
-    else if (n === "ice") sel.ice = e.target.value;
+  function custText(item) {
+    return [item.size, item.shots, "Sweetness " + item.sweetness, item.ice,
+      item.notes ? "Notes: " + item.notes : ""].filter(Boolean).join(" · ");
+  }
+
+  customDlg.addEventListener("change", (event) => {
+    const name = event.target.name;
+    if (name === "size") sel.size = event.target.value;
+    else if (name === "shots") sel.shots = event.target.value;
+    else if (name === "sweet") sel.sweet = event.target.value;
+    else if (name === "ice") sel.ice = event.target.value;
     updateCustomTotal();
   });
   $("cMinus").addEventListener("click", () => { sel.qty = Math.max(1, sel.qty - 1); updateCustomTotal(); });
   $("cPlus").addEventListener("click", () => { sel.qty = Math.min(99, sel.qty + 1); updateCustomTotal(); });
-
   $("cAdd").addEventListener("click", () => {
     addToCart({
       name: current.name,
+      productId: backendProductId(current.name),
       size: sel.size,
       shots: currentCat.espresso ? sel.shots : null,
       sweetness: sel.sweet,
@@ -208,97 +153,91 @@
     toast(sel.qty + " × " + current.name + " added");
   });
 
-  // Close buttons + click on the backdrop (works for both dialogs)
-  [customDlg, $("orderDialog")].forEach((dlg) => {
-    dlg.addEventListener("click", (e) => {
-      if (e.target === dlg || e.target.closest("[data-close]")) dlg.close();
+  $("chips").addEventListener("click", (event) => {
+    const button = event.target.closest(".chip");
+    if (!button) return;
+    activeCat = button.dataset.cat;
+    renderChips();
+    renderProducts();
+  });
+  $("products").addEventListener("click", (event) => {
+    const button = event.target.closest(".product");
+    if (button) openCustomize(MENU[Number(button.dataset.i)]);
+  });
+  [customDlg, orderDlg].forEach((dialog) => {
+    dialog.addEventListener("click", (event) => {
+      if (event.target === dialog || event.target.closest("[data-close]")) dialog.close();
     });
   });
 
-  /* ---------- Order form ---------- */
-  function addToCart(it) {
-    const key = [it.name, it.size, it.shots, it.sweetness, it.ice, it.notes].join("|");
-    const found = cart.find((c) => c.key === key);
-    if (found) found.qty = Math.min(99, found.qty + it.qty);
-    else cart.push(Object.assign({ key }, it));
+  function addToCart(item) {
+    const key = [item.name, item.size, item.shots, item.sweetness, item.ice, item.notes].join("|");
+    const found = cart.find((entry) => entry.key === key);
+    if (found) found.qty = Math.min(99, found.qty + item.qty);
+    else cart.push({ key, ...item });
     renderCart();
   }
 
-  function renderCart() {
-    const el = $("items");
-    if (!cart.length) {
-      el.innerHTML = '<p class="empty">No items yet. Click a product to add it.</p>';
-    } else {
-      el.innerHTML = cart.map((i, idx) => `
-        <div class="item">
-          <div>${esc(i.name)} × ${i.qty}<small>Customization: ${esc(custText(i))}</small></div>
-          <div class="stepper">
-            <button type="button" data-act="minus" data-idx="${idx}" aria-label="Decrease quantity">−</button>
-            <span>${i.qty}</span>
-            <button type="button" data-act="plus" data-idx="${idx}" aria-label="Increase quantity">+</button>
-          </div>
-          <div class="i-price">${peso(i.price * i.qty)}</div>
-          <button type="button" class="rm" data-act="remove" data-idx="${idx}" aria-label="Remove ${esc(i.name)}">✕</button>
-        </div>`).join("");
-    }
-    updateSummary();
-  }
-
-  $("items").addEventListener("click", (e) => {
-    const b = e.target.closest("button[data-act]");
-    if (!b) return;
-    const idx = +b.dataset.idx, item = cart[idx];
-    if (!item) return;
-    if (b.dataset.act === "plus") item.qty = Math.min(99, item.qty + 1);
-    else if (b.dataset.act === "minus") { item.qty -= 1; if (item.qty < 1) cart.splice(idx, 1); }
-    else cart.splice(idx, 1);
-    setMsg("");
-    renderCart();
-  });
-
-  // Discount is a % of the subtotal.
   function totals() {
-    const subtotal = round2(cart.reduce((s, i) => s + i.price * i.qty, 0));
-    const dv = Math.max(0, parseFloat($("discount").value) || 0);
-    const discount = round2(Math.min(subtotal * Math.min(dv, 100) / 100, subtotal));
+    const subtotal = round2(cart.reduce((sum, item) => sum + item.price * item.qty, 0));
+    const percent = Math.max(0, parseFloat($("discount").value) || 0);
+    const discount = round2(Math.min(subtotal * Math.min(percent, 100) / 100, subtotal));
     return { subtotal, discount, total: round2(subtotal - discount) };
   }
 
-  function updateSummary() {
-    const t = totals();
-    $("subtotal").textContent = peso(t.subtotal);
-    $("total").textContent = peso(t.total);
-    $("discHint").textContent = t.discount > 0 ? "− " + peso(t.discount) : "";
-
-    const raw = $("tendered").value.trim();
-    const tendered = parseFloat(raw);
-    const ch = $("change");
-    ch.classList.remove("short");
-    if (!cart.length || raw === "" || !isFinite(tendered)) {
-      ch.textContent = "Change: ₱0";
-    } else if (tendered >= t.total) {
-      ch.textContent = "Change: " + peso(tendered - t.total);
-    } else {
-      ch.textContent = "Short by " + peso(t.total - tendered);
-      ch.classList.add("short");
-    }
-    $("tendered").placeholder = $("payment").value === "Cash" ? "0" : "Exact amount";
+  function renderCart() {
+    $("items").innerHTML = cart.length
+      ? cart.map((item, index) => `<div class="item">
+          <div>${esc(item.name)} × ${item.qty}<small>Customization: ${esc(custText(item))}</small></div>
+          <div class="stepper">
+            <button type="button" data-act="minus" data-idx="${index}" aria-label="Decrease quantity">−</button>
+            <span>${item.qty}</span>
+            <button type="button" data-act="plus" data-idx="${index}" aria-label="Increase quantity">+</button>
+          </div>
+          <div class="i-price">${peso(item.price * item.qty)}</div>
+          <button type="button" class="rm" data-act="remove" data-idx="${index}" aria-label="Remove ${esc(item.name)}">✕</button>
+        </div>`).join("")
+      : '<p class="empty">No items yet. Click a product to add it.</p>';
+    updateSummary();
   }
 
+  function updateSummary() {
+    const totalsValue = totals();
+    $("subtotal").textContent = peso(totalsValue.subtotal);
+    $("total").textContent = peso(totalsValue.total);
+    $("discHint").textContent = totalsValue.discount > 0 ? "− " + peso(totalsValue.discount) : "";
+    const tendered = parseFloat($("tendered").value);
+    if (!cart.length || $("tendered").value.trim() === "" || !isFinite(tendered)) {
+      $("change").textContent = "Change: ₱0";
+      $("change").classList.remove("short");
+    } else if (tendered >= totalsValue.total) {
+      $("change").textContent = "Change: " + peso(tendered - totalsValue.total);
+      $("change").classList.remove("short");
+    } else {
+      $("change").textContent = "Short by " + peso(totalsValue.total - tendered);
+      $("change").classList.add("short");
+    }
+  }
+
+  $("items").addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-act]");
+    if (!button) return;
+    const index = Number(button.dataset.idx);
+    const item = cart[index];
+    if (button.dataset.act === "plus") item.qty = Math.min(99, item.qty + 1);
+    else if (button.dataset.act === "minus") {
+      item.qty -= 1;
+      if (item.qty < 1) cart.splice(index, 1);
+    } else cart.splice(index, 1);
+    setMsg("");
+    renderCart();
+  });
   ["discount", "payment", "tendered"].forEach((id) => {
-    $(id).addEventListener("input", () => { setMsg(""); updateSummary(); });
-    $(id).addEventListener("change", () => { setMsg(""); updateSummary(); });
+    $(id).addEventListener("input", updateSummary);
+    $(id).addEventListener("change", updateSummary);
   });
 
-  function setMsg(text) { $("formMsg").textContent = text; }
-  function fail(text, focusId) {
-    setMsg(text);
-    if (focusId) $(focusId).focus();
-  }
-
-  // Order no. and Date/Time are generated, never typed by the user.
-  function tick() { $("dt").value = fmtShort(new Date()); }
-  setInterval(tick, 15000);
+  function setMsg(message) { $("formMsg").textContent = message; }
 
   function resetForm() {
     cart = [];
@@ -306,59 +245,46 @@
     $("discount").value = "";
     $("payment").value = "Cash";
     $("tendered").value = "";
-    $("ono").value = nextOrderNo();
-    tick();
+    $("ono").value = "AUTO";
+    $("dt").value = fmtShort(new Date());
     setMsg("");
     renderCart();
   }
 
-  function placeOrder() {
+  async function placeOrder() {
     setMsg("");
-    if (!cart.length) return fail("Add at least one item to the order.");
-
-    const t = totals();
-    const method = $("payment").value;
-    const raw = $("tendered").value.trim();
-    let tendered;
-    if (raw === "") {
-      if (method === "Cash" && t.total > 0) return fail("Enter the amount tendered.", "tendered");
-      tendered = t.total;
-    } else {
-      tendered = parseFloat(raw);
+    if (!cart.length) return setMsg("Add at least one item to the order.");
+    const totalsValue = totals();
+    const rawTendered = $("tendered").value.trim();
+    const tendered = rawTendered === "" ? totalsValue.total : parseFloat(rawTendered);
+    if (!isFinite(tendered) || tendered < totalsValue.total) {
+      return setMsg("Amount tendered is short by " + peso(totalsValue.total - (tendered || 0)) + ".");
     }
-    if (!isFinite(tendered) || tendered < 0) return fail("Enter a valid amount tendered.", "tendered");
-    if (tendered < t.total) return fail("Amount tendered is short by " + peso(t.total - tendered) + ".", "tendered");
 
-    const order = {
-      no: nextOrderNo(),
-      customer: $("customer").value.trim() || "Walk-in",
-      createdAt: Date.now(),
-      status: "Pending",
-      items: cart.map((i) => ({
-        name: i.name, size: i.size, shots: i.shots, sweetness: i.sweetness,
-        ice: i.ice, notes: i.notes, price: i.price, qty: i.qty
-      })),
-      subtotal: t.subtotal,
-      discount: t.discount,
-      total: t.total,
-      payment: method,
-      tendered: round2(tendered),
-      change: round2(tendered - t.total),
-      stockDeducted: false // NEW
-    };
-
-    // NEW: check stock first, then deduct it from the shared inventory
-    const stock = BBInventory.canFulfil(order.items);
-    if (!stock.ok) return fail("Not enough stock: " + stock.shortages.join("; ") + ".");
-    BBInventory.deduct(order.items, order.no);
-    order.stockDeducted = true;
-
-    orders.push(order);
-    saveOrders();
-    resetForm();
-    renderOrders();
-    refreshAlerts(); // NEW
-    toast("Order #" + order.no + " placed");
+    try {
+      await api("POST", "/orders", {
+        items: cart.map((item) => ({
+          productId: item.productId,
+          qty: item.qty,
+          price: item.price,
+          size: item.size,
+          shots: item.shots,
+          sweetness: item.sweetness,
+          ice: item.ice,
+          notes: item.notes
+        })),
+        discountPercent: parseFloat($("discount").value) || 0,
+        payment: $("payment").value,
+        tendered,
+        customer: $("customer").value.trim()
+      });
+      resetForm();
+      await refreshOrders();
+      await refreshAlerts();
+      toast("Order placed");
+    } catch (error) {
+      setMsg(error.message);
+    }
   }
 
   $("payBtn").addEventListener("click", placeOrder);
@@ -366,95 +292,96 @@
     const dirty = cart.length || $("customer").value.trim();
     if (dirty && !confirm("Clear this order?")) return;
     resetForm();
-    if (dirty) toast("Order cleared");
   });
 
-  /* ---------- Current orders ---------- */
-  function renderOrders() {
-    $("orders").innerHTML = orders.slice()
-      .sort((a, b) => b.createdAt - a.createdAt)
-      .map((o) =>
-        `<button type="button" class="order-row" data-no="${esc(o.no)}"><span>#${esc(o.no)} ${esc(o.customer)}</span><span class="badge ${o.status.toLowerCase()}">${esc(o.status)}</span></button>`
-      ).join("");
+  async function refreshOrders() {
+    try {
+      const rows = await api("GET", "/orders");
+      orders = await Promise.all(rows.map(async (row) => api("GET", `/orders/${row.id}`)));
+      renderOrders();
+    } catch (error) {
+      setMsg(error.message);
+    }
   }
 
-  const orderDlg = $("orderDialog");
-  let viewing = null;
-  const STATUSES = ["Pending", "Completed", "Cancelled"];
+  function renderOrders() {
+    $("orders").innerHTML = orders.length
+      ? orders.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+          .map((order) => `<button type="button" class="order-row" data-no="${esc(order.orderNumber)}">
+            <span>#${esc(order.orderNumber)} ${esc(order.customer)}</span>
+            <span class="badge ${String(order.status).toLowerCase()}">${esc(order.status)}</span>
+          </button>`).join("")
+      : '<p class="empty">No orders today.</p>';
+  }
 
-  function renderOrderDialog(o, focusStatus) {
-    const items = o.items.map((i) =>
-      `<div class="d-item"><div><b>${esc(i.name)} × ${i.qty}</b><small>Customization: ${esc(custText(i))}</small></div><span>${peso(i.price * i.qty)}</span></div>`
+  function renderOrderDialog(order) {
+    const items = (order.items || []).map((item) =>
+      `<div class="d-item"><div><b>${esc(item.name)} × ${item.qty}</b><small>Customization: ${esc(item.customization || "")}</small></div><span>${peso(item.price * item.qty)}</span></div>`
     ).join("");
-    const lines = [
-      ["Subtotal", peso(o.subtotal), ""],
-      o.discount > 0 ? ["Discount", "− " + peso(o.discount), ""] : null,
-      ["Total", peso(o.total), "total"],
-      ["Payment", o.payment, ""],
-      ["Amount tendered", peso(o.tendered), ""],
-      ["Change", peso(o.change), ""]
-    ].filter(Boolean).map(([l, v, c]) => `<div class="line ${c}"><span>${l}</span><span>${esc(v)}</span></div>`).join("");
-
     $("oBody").innerHTML = `
       <div class="modal-head">
-        <div>
-          <h2>Order #${esc(o.no)}</h2>
-          <p class="sub">${esc(o.customer)} · ${esc(fmtLong(new Date(o.createdAt)))}</p>
-        </div>
-        <span class="badge ${o.status.toLowerCase()}">${esc(o.status)}</span>
+        <div><h2>Order #${esc(order.orderNumber)}</h2><p class="sub">${esc(order.customer)} · ${esc(fmtLong(order.createdAt))}</p></div>
+        <span class="badge ${String(order.status).toLowerCase()}">${esc(order.status)}</span>
         <button type="button" class="x" data-close aria-label="Close">×</button>
       </div>
       <div>${items}</div>
-      <div class="d-lines">${lines}</div>
+      <div class="d-lines">
+        ${order.discount > 0 ? `<div class="line"><span>Discount</span><span>− ${peso(order.discount)}</span></div>` : ""}
+        <div class="line total"><span>Total</span><span>${peso(order.total)}</span></div>
+        <div class="line"><span>Payment</span><span>${esc(order.payment)}</span></div>
+        <div class="line"><span>Amount tendered</span><span>${peso(order.tendered)}</span></div>
+      </div>
       <label class="status-label">Update status</label>
       <div class="seg-group">
-        ${STATUSES.map((s) => `<button type="button" class="seg${s === o.status ? " active" : ""}" data-status="${s}">${s}</button>`).join("")}
+        ${["Pending", "Completed", "Cancelled"].map((status) =>
+          `<button type="button" class="seg${status === order.status ? " active" : ""}" data-status="${status}">${status}</button>`
+        ).join("")}
       </div>
       <div class="modal-foot"><span></span><button type="button" class="btn cancel" data-close>Close</button></div>`;
-    if (focusStatus) {
-      const b = $("oBody").querySelector('[data-status="' + focusStatus + '"]');
-      if (b) b.focus();
-    }
   }
 
-  $("orders").addEventListener("click", (e) => {
-    const b = e.target.closest(".order-row");
-    if (!b) return;
-    const o = orders.find((x) => x.no === b.dataset.no);
-    if (!o) return;
-    viewing = o.no;
-    renderOrderDialog(o);
+  $("orders").addEventListener("click", (event) => {
+    const button = event.target.closest(".order-row");
+    if (!button) return;
+    const order = orders.find((entry) => entry.orderNumber === button.dataset.no);
+    if (!order) return;
+    viewing = order.id;
+    renderOrderDialog(order);
     orderDlg.showModal();
   });
 
-  orderDlg.addEventListener("click", (e) => {
-    const b = e.target.closest("[data-status]");
-    if (!b) return;
-    const o = orders.find((x) => x.no === viewing);
-    if (!o || o.status === b.dataset.status) return;
-
-    // NEW: restore stock when cancelling, deduct again when reopening
-    if (b.dataset.status === "Cancelled" && o.stockDeducted) {
-      BBInventory.restore(o.items, o.no);
-      o.stockDeducted = false;
-    } else if (o.status === "Cancelled" && b.dataset.status !== "Cancelled" && !o.stockDeducted) {
-      const stock = BBInventory.canFulfil(o.items);
-      if (!stock.ok) return toast("Not enough stock to reopen: " + stock.shortages.join("; "));
-      BBInventory.deduct(o.items, o.no);
-      o.stockDeducted = true;
+  orderDlg.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-status]");
+    if (!button) return;
+    const status = button.dataset.status;
+    let reason;
+    if (status === "Cancelled") {
+      reason = prompt("Reason for cancelling:");
+      if (!reason || !reason.trim()) return;
     }
-
-    o.status = b.dataset.status;
-    saveOrders();
-    renderOrders();
-    refreshAlerts(); // NEW
-    renderOrderDialog(o, o.status);
+    try {
+      await api("PATCH", `/orders/${viewing}/status`, { status, reason });
+      await refreshOrders();
+      await refreshAlerts();
+      const updated = orders.find((order) => order.id === viewing);
+      if (updated) renderOrderDialog(updated);
+      toast("Order status updated");
+    } catch (error) {
+      toast(error.message);
+    }
   });
 
-  /* ---------- Init ---------- */
-  renderChips();
-  renderProducts();
-  renderOrders();
-  refreshAlerts(); // NEW
-  resetForm();
+  async function init() {
+    renderChips();
+    try {
+      backendProducts = await api("GET", "/products?available=true");
+    } catch (error) {
+      setMsg(error.message);
+    }
+    renderProducts();
+    resetForm();
+    await Promise.all([refreshOrders(), refreshAlerts()]);
+  }
+
+  init();
 })();

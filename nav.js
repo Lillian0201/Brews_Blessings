@@ -14,7 +14,7 @@
   // Leave a page as '' until its file is ready; clicking it shows a "not connected yet" notice.
   const PAGES = {
     dash: '../Dashboard/Dashboard.html',
-    orders: '../POS/POS.html',
+    orders: '../POS/pos.html',
     inv: '../Inventory/Inventory.html',    
     tx: '../Transactions/Transactions.html',
     exp: '../Expense/Expense.html',

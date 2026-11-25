@@ -1,5 +1,5 @@
 /* Transactions page: Sales, Discounts, Voided, Refunded + Refund and Void forms.
-   Data now comes from the Flask API (backend/transactions.py). The server is the source of truth:
+   Data now comes from the FastAPI backend. The server is the source of truth:
    after every change we reload the list from it. */
 (() => {
   'use strict';
@@ -27,7 +27,7 @@
         body: body ? JSON.stringify(body) : undefined
       });
     } catch {
-      throw new Error("Can't reach the server. Is the backend running (python app.py)?");
+      throw new Error("Can't reach the server. Is the backend running (python main.py)?");
     }
     let data = null;
     try { data = await res.json(); } catch { /* no body */ }

@@ -1,126 +1,149 @@
-const $ = (id) => document.getElementById(id);
-const S = window.BBInventory;
-const fmtPeso = (n) => "₱" + Number(n).toLocaleString("en-PH");
+(() => {
+  "use strict";
 
-let items = [];
-let movements = [];
+  const API = "http://127.0.0.1:5001/api";
+  const $ = (id) => document.getElementById(id);
+  const fmtPeso = (n) => "₱" + Number(n).toLocaleString("en-PH");
+  const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  let items = [];
+  let movements = [];
 
-function refresh() {
-  const s = S.load();
-  items = s.items;
-  movements = s.movements;
-}
-
-function flash(text, isError = false) {
-  const m = $("msg");
-  m.textContent = text;
-  m.className = "msg" + (isError ? " error" : "");
-}
-
-function populateItemSelect() {
-  refresh();
-  $("siItem").innerHTML =
-    `<option value="">Select an item</option>` +
-    items.map((i) => `<option value="${i.name}">${i.name}</option>`).join("");
-}
-
-function saveStockIn() {
-  const name = $("siItem").value;
-  const qty = Number($("siQty").value);
-  const batch = $("siBatch").value.trim();
-  if (!name || !(qty > 0) || !batch) {
-    return flash("Pick an item, enter a quantity and a batch no.", true);
+  async function api(method, path, body) {
+    const me = BBNav.getSessionUser() || {};
+    const response = await fetch(API + path, {
+      method,
+      headers: { "X-Username": me.u || "", ...(body ? { "Content-Type": "application/json" } : {}) },
+      body: body ? JSON.stringify(body) : undefined
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) throw new Error((data && data.detail) || `Server error (${response.status}).`);
+    return data;
   }
-  try {
-    S.stockIn(name, qty, batch, "Owner");
-  } catch (err) {
-    return flash(err.message, true);
+
+  function flash(text, isError = false) {
+    $("msg").textContent = text;
+    $("msg").className = "msg" + (isError ? " error" : "");
   }
-  $("siQty").value = "";
-  $("siBatch").value = "";
-  render();
-  flash("Stock-in saved.");
-}
 
-function promptStockOut(name) {
-  refresh();
-  const it = items.find((i) => i.name === name);
-  const qty = Number(prompt(`Stock-out qty for ${name} (${it.unit}). Max ${S.remaining(it)}.`));
-  if (!(qty > 0)) return;
-  try {
-    S.stockOut(name, qty, "Barista");
-    render();
-    flash(`Stock-out saved for ${name}.`);
-  } catch (err) {
-    flash(err.message, true);
+  async function refresh() {
+    try {
+      [items, movements] = await Promise.all([
+        api("GET", "/inventory"),
+        api("GET", "/inventory/movements")
+      ]);
+      populateItemSelect();
+      render();
+    } catch (error) {
+      flash(error.message, true);
+    }
   }
-}
 
-function addItem() {
-  const name = prompt("Item name:");
-  if (!name) return;
-  const barcode = prompt("Barcode:") || "";
-  const unit = prompt("Unit (kg, L, bottle, pcs...):") || "pcs";
-  const unitCost = Number(prompt("Unit cost (₱):") || 0);
-  const reorder = Number(prompt("Reorder level:") || 0);
-  S.addItem({ name, barcode, unit, unitCost, reorder });
-  populateItemSelect();
-  render();
-  flash(`${name} added. Use Stock-in to add its first batch.`);
-}
-
-function handleScanEnter(e) {
-  if (e.key !== "Enter") return;
-  refresh();
-  const code = $("search").value.trim().toLowerCase();
-  const hit = items.find((i) => i.barcode.toLowerCase() === code);
-  if (hit) {
-    $("siItem").value = hit.name;
-    $("siItem").focus();
-    flash(`Found ${hit.name}.`);
+  function populateItemSelect() {
+    $("siItem").innerHTML =
+      `<option value="">Select an item</option>` +
+      items.map((item) => `<option value="${item.id}">${esc(item.name)}</option>`).join("");
   }
-}
 
-function render() {
+  async function saveStockIn() {
+    const ingredientId = Number($("siItem").value);
+    const quantity = Number($("siQty").value);
+    const batchNo = $("siBatch").value.trim();
+    if (!ingredientId || !(quantity > 0) || !batchNo) {
+      return flash("Pick an item, enter a quantity and a batch no.", true);
+    }
+    try {
+      await api("POST", "/inventory/stock-in", { ingredientId, quantity, batchNo });
+      $("siQty").value = "";
+      $("siBatch").value = "";
+      await refresh();
+      flash("Stock-in saved.");
+    } catch (error) {
+      flash(error.message, true);
+    }
+  }
+
+  async function promptStockOut(ingredientId, name) {
+    const item = items.find((entry) => entry.id === ingredientId);
+    const quantity = Number(prompt(`Stock-out qty for ${name}. Remaining ${item ? item.remaining : 0}.`));
+    if (!(quantity > 0)) return;
+    try {
+      await api("POST", "/inventory/stock-out", { ingredientId, quantity });
+      await refresh();
+      flash(`Stock-out saved for ${name}.`);
+    } catch (error) {
+      flash(error.message, true);
+    }
+  }
+
+  async function addItem() {
+    const name = prompt("Item name:");
+    if (!name) return;
+    const barcode = prompt("Barcode:") || "";
+    const unit = prompt("Unit (kg, L, bottle, pcs...):") || "pcs";
+    const unitCost = Number(prompt("Unit cost (₱):") || 0);
+    const reorderLevel = Number(prompt("Reorder level:") || 0);
+    try {
+      await api("POST", "/inventory/items", { name, barcode, unit, unitCost, reorderLevel });
+      await refresh();
+      flash(`${name} added. Use Stock-in to add its first batch.`);
+    } catch (error) {
+      flash(error.message, true);
+    }
+  }
+
+  function handleScanEnter(event) {
+    if (event.key !== "Enter") return;
+    const code = $("search").value.trim().toLowerCase();
+    const hit = items.find((item) => String(item.barcode || "").toLowerCase() === code);
+    if (hit) {
+      $("siItem").value = String(hit.id);
+      $("siItem").focus();
+      flash(`Found ${hit.name}.`);
+    }
+  }
+
+  function render() {
+    const query = $("search").value.trim().toLowerCase();
+    const shown = items.filter((item) =>
+      item.name.toLowerCase().includes(query) ||
+      String(item.barcode || "").toLowerCase().includes(query)
+    );
+
+    $("itemRows").innerHTML = shown.length
+      ? shown.map((item) => `<tr>
+          <td>${esc(item.name)}</td><td>${esc(item.barcode || "")}</td><td>${esc(item.unit)}</td>
+          <td>${fmtPeso(item.unitCost)}</td><td>${item.beginning}</td><td>${item.stockIn}</td>
+          <td>${item.stockOut}</td><td>${item.remaining}</td><td>${item.reorderLevel}</td>
+          <td>${esc(item.batchNo)}</td>
+          <td><span class="badge ${String(item.status).toLowerCase().replace(/[^a-z]/g, "")}">${esc(item.status)}</span></td>
+          <td><button class="link" type="button" onclick="window.promptStockOut(${item.id}, '${esc(item.name).replace(/'/g, "\\'")}')">Stock-out</button></td>
+        </tr>`).join("")
+      : `<tr><td colspan="12" class="empty">No items match your search.</td></tr>`;
+
+    const counts = { Available: 0, "Low-Stock": 0, "Out-of-Stock": 0 };
+    items.forEach((item) => counts[item.status] = (counts[item.status] || 0) + 1);
+    $("cntAvail").textContent = counts.Available;
+    $("cntLow").textContent = counts["Low-Stock"];
+    $("cntOut").textContent = counts["Out-of-Stock"];
+    $("lowPill").textContent = `Stock alerts: ${(counts["Low-Stock"] || 0) + (counts["Out-of-Stock"] || 0)}`;
+
+    $("moveRows").innerHTML = movements.length
+      ? movements.slice(0, 20).map((movement) =>
+          `<tr><td>${esc(movement.date)}</td><td>${esc(movement.item)}</td><td>${esc(movement.type)}</td>
+           <td>${movement.qty}</td><td>${esc(movement.batchNo || "")}</td><td>${esc(movement.by || "")}</td></tr>`
+        ).join("")
+      : `<tr><td colspan="6" class="empty">No movements yet.</td></tr>`;
+  }
+
+  window.promptStockOut = promptStockOut;
+  window.saveStockIn = saveStockIn;
+  window.addItem = addItem;
+
+  $("search").addEventListener("input", render);
+  $("search").addEventListener("keydown", handleScanEnter);
+  $("scanBtn").addEventListener("click", () => $("search").focus());
+  $("todayPill").textContent =
+    "Today: " + new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" });
   refresh();
-  const q = $("search").value.trim().toLowerCase();
-  const shown = items.filter(
-    (i) => i.name.toLowerCase().includes(q) || i.barcode.toLowerCase().includes(q)
-  );
-
-  $("itemRows").innerHTML = shown.length
-    ? shown.map((it) => {
-        const st = S.statusOf(it);
-        return `<tr>
-          <td>${it.name}</td><td>${it.barcode}</td><td>${it.unit}</td><td>${fmtPeso(it.unitCost)}</td>
-          <td>${it.beginning}</td><td>${it.stockIn}</td><td>${it.stockOut}</td><td>${S.remaining(it)}</td>
-          <td>${it.reorder}</td><td>${S.oldestBatch(it)}</td>
-          <td><span class="badge ${st.toLowerCase()}">${st}</span></td>
-          <td><button class="link" onclick="promptStockOut('${it.name}')">Stock-out</button></td>
-        </tr>`;
-      }).join("")
-    : `<tr><td colspan="12" class="empty">No items match your search.</td></tr>`;
-
-  const counts = { Available: 0, "Low-Stock": 0, "Out-of-Stock": 0 };
-  items.forEach((i) => counts[S.statusOf(i)]++);
-  $("cntAvail").textContent = counts.Available;
-  $("cntLow").textContent = counts["Low-Stock"];
-  $("cntOut").textContent = counts["Out-of-Stock"];
-  $("lowPill").textContent = `Stock alerts: ${counts["Low-Stock"] + counts["Out-of-Stock"]}`;
-
-  $("moveRows").innerHTML = movements.length
-    ? movements.slice().reverse().slice(0, 20).map((m) =>
-        `<tr><td>${m.date}</td><td>${m.item}</td><td>${m.type}</td><td>${m.qty}</td><td>${m.batch}</td><td>${m.by}</td></tr>`
-      ).join("")
-    : `<tr><td colspan="6" class="empty">No movements yet.</td></tr>`;
-}
-
-// ---- Init ----
-$("search").addEventListener("input", render);
-$("search").addEventListener("keydown", handleScanEnter);
-$("scanBtn").addEventListener("click", () => $("search").focus());
-$("todayPill").textContent =
-  "Today: " + new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" });
-S.onChange(() => { populateItemSelect(); render(); });
-populateItemSelect();
-render();
+})();
