@@ -7,7 +7,7 @@ from fastapi import Response
 from starlette.requests import Request
 from werkzeug.security import generate_password_hash
 
-from auth.router import login_endpoint, logout_endpoint
+from auth.router import _cookie_secure, login_endpoint, logout_endpoint
 from auth.service import create_session, revoke_session
 from src.core.dependencies import get_current_user
 from src.core.errors import ApiError
@@ -38,6 +38,19 @@ def request_with_cookie(token=None, headers=None):
 
 
 class SessionTests(unittest.TestCase):
+    def test_secure_cookie_defaults_off_locally_and_on_vercel(self):
+        with patch.dict(os.environ, {}, clear=True):
+            self.assertFalse(_cookie_secure())
+
+        with patch.dict(os.environ, {"VERCEL": "1"}, clear=True):
+            self.assertTrue(_cookie_secure())
+
+        with patch.dict(os.environ, {
+            "VERCEL": "1",
+            "BB_COOKIE_SECURE": "false",
+        }, clear=True):
+            self.assertFalse(_cookie_secure())
+
     def test_login_sets_http_only_cookie_and_logout_expires_it(self):
         user = {
             "userid": 7,

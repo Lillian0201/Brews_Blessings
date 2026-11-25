@@ -1,3 +1,4 @@
+import os
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, Depends, Request, Response
@@ -5,6 +6,7 @@ from psycopg2.extras import RealDictCursor
 
 from auth.service import SESSION_COOKIE, create_session, login, revoke_session
 from src.core.dependencies import get_current_user
+from src.config import get_bool
 from src.database.connection import get_cursor
 
 
@@ -67,6 +69,4 @@ def logout_endpoint(
 
 
 def _cookie_secure() -> bool:
-    from src.config import get_bool
-
-    return get_bool("BB_COOKIE_SECURE", True)
+    return get_bool("BB_COOKIE_SECURE", os.getenv("VERCEL") == "1")
