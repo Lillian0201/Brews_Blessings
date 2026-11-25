@@ -9,12 +9,19 @@ from src.config import get_env
 
 
 def get_conn():
+    # Supabase provides a PostgreSQL URL. Keep the individual settings for
+    # local development, but prefer the URL when one is configured.
+    database_url = get_env("DATABASE_URL") if os.getenv("DATABASE_URL", "").strip() else None
+    if database_url:
+        return psycopg2.connect(database_url, sslmode="require")
+
     return psycopg2.connect(
         host=get_env("DB_HOST"),
         port=get_env("DB_PORT"),
         dbname=get_env("DB_NAME"),
         user=get_env("DB_USER"),
         password=get_env("DB_PASSWORD"),
+        sslmode=get_env("DB_SSLMODE", "prefer"),
     )
 
 

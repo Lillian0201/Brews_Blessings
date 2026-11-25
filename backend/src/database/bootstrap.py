@@ -1,3 +1,5 @@
+import os
+
 import psycopg2
 from psycopg2 import sql
 
@@ -6,6 +8,12 @@ from src.database.connection import get_conn
 
 
 def ensure_database() -> None:
+    # Supabase creates the project's database for you and does not grant the
+    # app role permission to create databases. Schema bootstrap still runs in
+    # apply_bootstrap() after this check.
+    if os.getenv("DATABASE_URL", "").strip():
+        return
+
     db_name = get_env("DB_NAME")
     admin_name = get_env("DB_ADMIN_NAME", "postgres")
     conn = psycopg2.connect(
