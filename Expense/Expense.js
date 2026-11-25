@@ -89,7 +89,6 @@
       document.getElementById('expAmount').value = '';
       document.getElementById('expDesc').value = '';
       await loadExpenses();
-      alert('Expense saved successfully!');
     } catch (err) {
       alert(err.message);
     } finally {
