@@ -61,6 +61,7 @@ def get_order_response(cur, order_id: int) -> dict:
     return {
         **order_row(row),
         "discount": num(row["discountamount"]),
+        "discountNote": row.get("discountnote") or "",
         "payment": row["paymentmethod"],
         "tendered": num(row["amounttendered"]),
         "cancelReason": row["cancelreason"],
@@ -89,6 +90,13 @@ def create_order_service(cur, user: dict, body: dict | None) -> tuple[dict, int]
         product = find_available_product(cur, product_id)
         if not product:
             raise ApiError(422, "One of the products is not available.")
+        size = str(raw.get("size") or "")
+        price_column = {"Classic": "sellingprice", "Grandeur": "grandeurprice", "Hot": "hotprice"}.get(size)
+        expected_price = product.get(price_column) if price_column else None
+        if expected_price is None:
+            raise ApiError(422, f"{product['productname']} is not available in {size or 'that size'}.")
+        if price != expected_price:
+            raise ApiError(422, f"The {size} price for {product['productname']} changed. Refresh the POS and try again.")
         subtotal += price * qty
         lines.append((product_id, product["productname"], qty, price, describe(raw)))
 
@@ -108,8 +116,11 @@ def create_order_service(cur, user: dict, body: dict | None) -> tuple[dict, int]
         tendered = total
     change = tendered - total
     customer = str(body.get("customer") or "").strip()[:45] or "Walk-in"
+    discount_note = str(body.get("discountNote") or "").strip()[:60]
+    if pct > 0 and not discount_note:
+        raise ApiError(422, "Enter a reason for the discount.")
     order_number = next_order_number(cur)
-    order_id = create_order(cur, user["userid"], order_number, customer, total, discount, payment, tendered)
+    order_id = create_order(cur, user["userid"], order_number, customer, total, discount, payment, tendered, discount_note)
     for product_id, name, qty, price, customization in lines:
         add_order_item(cur, order_id, product_id, name, qty, price, customization)
     needs = recipe_needs(cur, [(pid, qty) for pid, _, qty, _, _ in lines])

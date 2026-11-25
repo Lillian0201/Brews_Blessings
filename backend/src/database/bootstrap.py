@@ -63,6 +63,8 @@ def apply_bootstrap() -> None:
             ("schema.sql", lambda cur: table_exists(cur, "product")),
             ("migrations/001_transactions.sql", lambda cur: table_exists(cur, "orderitem")),
             ("migrations/002_inventory_pos.sql", lambda cur: table_exists(cur, "ingredient")),
+            ("migrations/003_pos_catalog_prices.sql", lambda cur: False),
+            ("migrations/004_default_grandeur_price.sql", lambda cur: False),
         ):
             with conn.cursor() as cur:
                 cur.execute("SELECT 1 FROM schema_migrations WHERE filename = %s", (filename,))

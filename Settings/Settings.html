@@ -41,7 +41,7 @@
               <tr>
                 <th>Product</th>
                 <th>Category</th>
-                <th>Selling Price</th>
+                <th>Classic / Grandeur / Hot</th>
                 <th>Packaging Cost</th>
                 <th>Available</th>
                 <th>Actions</th>
@@ -109,8 +109,16 @@
           </select>
         </div>
         <div class="form-group">
-          <label for="prodPrice">Selling Price (₱)</label>
+          <label for="prodPrice">Classic price (₱)</label>
           <input type="number" id="prodPrice" required min="0" step="0.01" placeholder="e.g. 120">
+        </div>
+        <div class="form-group">
+          <label for="prodGrandeurPrice">Grandeur price (₱)</label>
+          <input type="number" id="prodGrandeurPrice" required min="0" step="0.01" placeholder="e.g. 150">
+        </div>
+        <div class="form-group">
+          <label for="prodHotPrice">Hot price (₱, optional)</label>
+          <input type="number" id="prodHotPrice" min="0" step="0.01" placeholder="Leave blank if unavailable">
         </div>
         <div class="form-group">
           <label for="prodPkg">Packaging Cost (₱)</label>

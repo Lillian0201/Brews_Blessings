@@ -110,6 +110,7 @@
     discounts: [
       ['Sale #', s => s.saleNo], ['Date', s => shortDate(s.date)], ['Order #', s => s.orderNo],
       ['Subtotal', s => peso(subtotal(s)), 'num'], ['Discount', s => peso(s.discount), 'num'],
+      ['Reason', s => esc(s.discountNote || '—')],
       ['Total', s => peso(total(s)), 'num'], ['Status', statusCell]
     ],
     voided: [

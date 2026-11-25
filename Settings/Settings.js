@@ -82,7 +82,7 @@
       <tr>
         <td><strong>${esc(p.name)}</strong></td>
         <td>${esc(p.category)}</td>
-        <td>${money(p.price)}</td>
+        <td>${money(p.price)} / ${money(p.grandeurPrice ?? p.price)} / ${p.hotPrice == null ? '—' : money(p.hotPrice)}</td>
         <td>${money(p.packagingCost)}</td>
         <td><span class="${p.available ? 'badge-yes' : 'badge-no'}">${p.available ? 'Yes' : 'No'}</span></td>
         <td class="action-links">
@@ -148,6 +148,8 @@
       $('prodName').value = product.name;
       $('prodCategory').value = product.category;
       $('prodPrice').value = product.price;
+      $('prodGrandeurPrice').value = product.grandeurPrice ?? product.price;
+      $('prodHotPrice').value = product.hotPrice ?? '';
       $('prodPkg').value = product.packagingCost;
       $('prodAvailable').checked = product.available;
     }
@@ -164,6 +166,8 @@
       name: $('prodName').value.trim(),
       category: $('prodCategory').value,
       price: $('prodPrice').value,
+      grandeurPrice: $('prodGrandeurPrice').value,
+      hotPrice: $('prodHotPrice').value || null,
       packagingCost: $('prodPkg').value,
       available: $('prodAvailable').checked
     };

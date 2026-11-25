@@ -46,6 +46,13 @@ def serialize_product(row: dict) -> dict:
         "name": row["productname"],
         "category": row["category"],
         "price": num(row["sellingprice"]),
+        "grandeurPrice": num(row.get("grandeurprice")) if row.get("grandeurprice") is not None else None,
+        "hotPrice": num(row.get("hotprice")) if row.get("hotprice") is not None else None,
+        "prices": {
+            "Classic": num(row["sellingprice"]),
+            "Grandeur": num(row.get("grandeurprice") if row.get("grandeurprice") is not None else row["sellingprice"]),
+            **({"Hot": num(row["hotprice"])} if row.get("hotprice") is not None else {}),
+        },
         "packagingCost": num(row["packagingcost"]),
         "cost": num(row["productcost"]),
         "available": row["isavailable"],
@@ -74,10 +81,13 @@ def add_product_service(cur, user: dict, body: dict | None) -> tuple[dict, int]:
     name = clean_text(body.get("name"), "Product name")
     category = clean_category(body.get("category"))
     price = clean_money(body.get("price"), "Selling price")
+    grandeur_price = clean_money(body.get("grandeurPrice", price), "Grandeur price")
+    raw_hot = body.get("hotPrice")
+    hot_price = clean_money(raw_hot, "Hot price") if raw_hot not in (None, "") else None
     packaging = clean_money(body.get("packagingCost", 0), "Packaging cost")
     available = bool(body.get("available", True))
     check_name_free(cur, name)
-    product_id = add_product(cur, name, category, price, packaging, available)
+    product_id = add_product(cur, name, category, price, grandeur_price, hot_price, packaging, available)
     audit(cur, user["userid"], f"Added product {name}", "PRODUCT", product_id)
     return get_product_response(cur, product_id), 201
 
@@ -89,10 +99,14 @@ def update_product_service(cur, user: dict, product_id: int, body: dict | None) 
     name = clean_text(body["name"], "Product name") if "name" in body else current["name"]
     category = clean_category(body["category"]) if "category" in body else current["category"]
     price = clean_money(body["price"], "Selling price") if "price" in body else Decimal(str(current["price"]))
+    grandeur_price = clean_money(body["grandeurPrice"], "Grandeur price") if "grandeurPrice" in body else Decimal(str(current["grandeurPrice"] if current["grandeurPrice"] is not None else current["price"]))
+    hot_price = clean_money(body["hotPrice"], "Hot price") if body.get("hotPrice") not in (None, "") else None
+    if "hotPrice" not in body:
+        hot_price = Decimal(str(current["hotPrice"])) if current["hotPrice"] is not None else None
     packaging = clean_money(body["packagingCost"], "Packaging cost") if "packagingCost" in body else Decimal(str(current["packagingCost"]))
     available = bool(body["available"]) if "available" in body else current["available"]
     check_name_free(cur, name, product_id)
-    update_product(cur, product_id, name, category, price, packaging, available)
+    update_product(cur, product_id, name, category, price, grandeur_price, hot_price, packaging, available)
     audit(cur, user["userid"], f"Updated product {name}", "PRODUCT", product_id)
     return get_product_response(cur, product_id)
 

@@ -3,7 +3,7 @@ from typing import TypedDict
 
 STATUSES = ("Pending", "Completed", "Cancelled")
 ORDER_COLUMNS = ("orderid, ordernumber, customername, totalamount, discountamount, "
-                 "paymentmethod, amounttendered, orderstatus, orderdatetime, cancelreason")
+                 "discountnote, paymentmethod, amounttendered, orderstatus, orderdatetime, cancelreason")
 
 
 class OrderRow(TypedDict, total=False):

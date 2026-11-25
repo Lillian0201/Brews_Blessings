@@ -72,6 +72,20 @@
     return product ? product.id : null;
   }
 
+  function currentMenu() {
+    return backendProducts.map((product) => {
+      const saved = MENU.find((entry) => entry.name === product.name);
+      const category = saved ? CATEGORIES.find((entry) => entry.id === saved.cat) :
+        CATEGORIES.find((entry) => entry.label === product.category);
+      return {
+        cat: category ? category.id : "noncoffee",
+        name: product.name,
+        prices: product.prices || { Classic: product.price },
+        espresso: saved ? !!category.espresso : product.category === "Coffee"
+      };
+    }).filter((entry) => entry.prices && entry.prices.Classic != null);
+  }
+
   async function refreshAlerts() {
     try {
       const inventory = await api("GET", "/inventory");
@@ -90,11 +104,11 @@
   }
 
   function renderProducts() {
-    $("products").innerHTML = MENU
+    const menu = currentMenu();
+    $("products").innerHTML = menu
       .filter((item) => activeCat === "all" || item.cat === activeCat)
-      .filter((item) => backendProductId(item.name) !== null)
       .map((item) => {
-        const index = MENU.indexOf(item);
+        const index = menu.indexOf(item);
         return `<button type="button" class="product" data-i="${index}">
           <img src="${IMGS[item.name] || ""}" alt="${esc(item.name)}" loading="lazy">
           <b>${esc(item.name)}</b>
@@ -108,7 +122,7 @@
 
   function openCustomize(item) {
     current = item;
-    currentCat = CATEGORIES.find((category) => category.id === item.cat);
+    currentCat = CATEGORIES.find((category) => category.id === item.cat) || { label: "Product", espresso: item.espresso };
     const sizes = SIZES.filter((size) => item.prices[size] != null);
     sel.size = sizes[0];
     sel.shots = SHOTS[1];
@@ -177,7 +191,7 @@
   });
   $("products").addEventListener("click", (event) => {
     const button = event.target.closest(".product");
-    if (button) openCustomize(MENU[Number(button.dataset.i)]);
+    if (button) openCustomize(currentMenu()[Number(button.dataset.i)]);
   });
   [customDlg, orderDlg].forEach((dialog) => {
     dialog.addEventListener("click", (event) => {

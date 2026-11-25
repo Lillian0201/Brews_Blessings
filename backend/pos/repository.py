@@ -3,7 +3,8 @@ from pos.models import ORDER_COLUMNS
 
 def find_available_product(cur, product_id: int) -> dict | None:
     cur.execute(
-        "SELECT productname FROM product WHERE productid = %s AND isavailable",
+        "SELECT productname, sellingprice, grandeurprice, hotprice FROM product "
+        "WHERE productid = %s AND isavailable",
         (product_id,),
     )
     return cur.fetchone()
@@ -16,12 +17,12 @@ def next_order_number(cur) -> str:
 
 
 def create_order(cur, user_id: int, order_number: str, customer: str, total,
-                 discount, payment: str, tendered) -> int:
+                 discount, payment: str, tendered, discount_note: str = "") -> int:
     cur.execute(
         "INSERT INTO orders (userid, ordernumber, customername, totalamount, discountamount, "
-        "paymentmethod, amounttendered, orderstatus) "
-        "VALUES (%s, %s, %s, %s, %s, %s, %s, 'Completed') RETURNING orderid",
-        (user_id, order_number, customer, total, discount, payment, tendered),
+        "discountnote, paymentmethod, amounttendered, orderstatus) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'Pending') RETURNING orderid",
+        (user_id, order_number, customer, total, discount, discount_note, payment, tendered),
     )
     return cur.fetchone()["orderid"]
 
