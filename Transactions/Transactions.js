@@ -5,7 +5,7 @@
   'use strict';
 
   /* ---------- Settings ---------- */
-  const API = 'http://127.0.0.1:5001/api';   // change this when the backend is deployed
+  const API = BBAPI.base;
   const VOID_ROLES = ['Owner'];
 
   /* ---------- Helpers ---------- */
@@ -16,18 +16,16 @@
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
   /* ---------- API ---------- */
-  // Temporary login: the backend reads the username from this header (see transactions.py).
   async function api(method, path, body) {
-    const me = (window.BBNav && BBNav.getSessionUser()) || {};
     let res;
     try {
-      res = await fetch(API + path, {
+      res = await BBAPI.fetch(API + path, {
         method,
-        headers: { 'X-Username': me.u || '', ...(body ? { 'Content-Type': 'application/json' } : {}) },
+        headers: { ...(body ? { 'Content-Type': 'application/json' } : {}) },
         body: body ? JSON.stringify(body) : undefined
       });
     } catch {
-      throw new Error("Can't reach the server. Is the backend running (python main.py)?");
+      throw new Error("Can't reach the server. Check your connection and try again.");
     }
     let data = null;
     try { data = await res.json(); } catch { /* no body */ }

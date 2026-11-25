@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+import os
 
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
@@ -21,19 +22,28 @@ from dashboard.router import router as dashboard_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    if get_bool("BB_AUTO_BOOTSTRAP", True):
+    if get_bool("BB_AUTO_BOOTSTRAP", os.getenv("VERCEL") != "1"):
         apply_bootstrap()
         run_seeds()
     yield
 
 
 app = FastAPI(title="Brews & Blessings API", lifespan=lifespan)
+default_origins = "" if os.getenv("VERCEL") == "1" else (
+    "null,http://127.0.0.1:5500,http://localhost:5500,"
+    "http://127.0.0.1:8000,http://localhost:8000"
+)
+cors_origins = [
+    origin.strip()
+    for origin in os.getenv("BB_CORS_ORIGINS", default_origins).split(",")
+    if origin.strip()
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["Content-Type"],
 )
 app.add_exception_handler(ApiError, api_error_handler)
 app.add_exception_handler(RequestValidationError, validation_error_handler)

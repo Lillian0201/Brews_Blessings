@@ -21,13 +21,15 @@ Options:
     python api_tests.py --no-color                         (plain text)
     python api_tests.py --only SET                         (only IDs containing SET)
 
-It uses the seeded 'owner' and 'barista' usernames through the X-Username
-header, like the frontend does. One test (TC-POS-13) also adds a temporary
+It logs in with the seeded 'owner' and 'barista' accounts and reuses their
+session cookies. Set BB_OWNER_PASSWORD and BB_BARISTA_PASSWORD to the
+configured passwords. One test (TC-POS-13) also adds a temporary
 recipe straight into the database using backend/.env, so run it from the
 backend folder with the same Python environment as the backend.
 """
 import csv
 import datetime
+from http.cookiejar import CookieJar
 import json
 import os
 import sys
@@ -41,6 +43,13 @@ import urllib.request
 BASE = os.environ.get("BB_API", "http://127.0.0.1:5001/api")
 USE_COLOR = "--no-color" not in sys.argv
 OWNER, BARISTA = "owner", "barista"
+PASSWORDS = {
+    OWNER: os.environ.get("BB_OWNER_PASSWORD", "owner123"),
+    BARISTA: os.environ.get("BB_BARISTA_PASSWORD", "barista123"),
+}
+OPENERS = {}
+AUTHENTICATED = set()
+AUTH_ATTEMPTED = set()
 STAMP = datetime.datetime.now().strftime("%y%m%d%H%M%S")
 
 if "--url" in sys.argv:
@@ -61,17 +70,48 @@ GREEN, RED, YELLOW, CYAN, DIM = "32", "31", "33", "36", "2"
 # ---------------------------------------------------------------
 # Small HTTP helper
 # ---------------------------------------------------------------
-def call(method, path, body=None, user=OWNER):
-    headers = {}
-    if user:
-        headers["X-Username"] = user
+def opener_for(user):
+    if user not in OPENERS:
+        OPENERS[user] = urllib.request.build_opener(
+            urllib.request.HTTPCookieProcessor(CookieJar())
+        )
+    return OPENERS[user]
+
+
+def authenticate(user):
+    if user in AUTHENTICATED or user in AUTH_ATTEMPTED or user not in PASSWORDS:
+        return
+    AUTH_ATTEMPTED.add(user)
+    data = json.dumps({"username": user, "password": PASSWORDS[user]}).encode("utf-8")
+    req = urllib.request.Request(
+        BASE + "/login",
+        data=data,
+        method="POST",
+        headers={"Content-Type": "application/json"},
+    )
+    try:
+        with opener_for(user).open(req, timeout=20) as resp:
+            if resp.status == 200:
+                AUTHENTICATED.add(user)
+    except urllib.error.HTTPError as err:
+        if err.code != 401:
+            raise
+
+
+def call(method, path, body=None, user=OWNER, headers=None):
+    headers = dict(headers or {})
     data = None
     if body is not None:
         data = json.dumps(body).encode("utf-8")
-        headers["Content-Type"] = "application/json"
+        headers.setdefault("Content-Type", "application/json")
     req = urllib.request.Request(BASE + path, data=data, method=method, headers=headers)
+    if user:
+        authenticate(user)
+        opener = opener_for(user)
+    else:
+        opener = urllib.request.build_opener()
     try:
-        with urllib.request.urlopen(req, timeout=20) as resp:
+        with opener.open(req, timeout=20) as resp:
             status, raw = resp.status, resp.read()
     except urllib.error.HTTPError as err:
         status, raw = err.code, err.read()
@@ -143,18 +183,18 @@ def _():
     return "200 status ok"
 
 
-@test("TC-AUTH-01", "Login", "Request without a username is refused",
-      "GET /api/expenses with no X-Username returns 401")
+@test("TC-AUTH-01", "Login", "Request without a session is refused",
+      "GET /api/expenses without a session returns 401")
 def _():
     expect(call("GET", "/expenses", user=None), 401)
     return "401 Not logged in"
 
 
-@test("TC-AUTH-02", "Login", "Unknown username is refused",
-      "GET /api/expenses as 'nobody_here' returns 401")
+@test("TC-AUTH-02", "Login", "A forged username header is refused",
+      "X-Username without a session returns 401")
 def _():
-    expect(call("GET", "/expenses", user="nobody_here"), 401)
-    return "401 Unknown user"
+    expect(call("GET", "/expenses", user=None, headers={"X-Username": OWNER}), 401)
+    return "401 Session required; identity headers are ignored"
 
 
 @test("TC-AUTH-03", "Login", "Barista cannot open Owner-only data",

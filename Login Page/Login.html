@@ -18,13 +18,14 @@
     <input id="p" name="p" type="password" autocomplete="current-password">
     <p id="err" class="err" role="alert"></p>
     <button class="go">Log in</button>
-    <p class="note">Sign in with an account configured in the local backend. Auto-logout after inactivity.</p>
+    <p class="note">Sign in with your account. Auto-logout after inactivity.</p>
   </form>
   <details>
     <summary>Local development accounts</summary>
     <p>Defaults: Owner <code>owner</code> / <code>owner123</code>; Barista <code>barista</code> / <code>barista123</code>. Set private passwords in <code>backend/.env</code> before use outside local development.</p>
   </details>
 </main>
+<script src="../api-client.js"></script>
 <script src="Login.js"></script>
 </body>
 </html>

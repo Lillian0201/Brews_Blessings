@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const API = "http://127.0.0.1:5001/api";
+  const API = BBAPI.base;
   const $ = (id) => document.getElementById(id);
   const fmtPeso = (n) => "₱" + Number(n).toLocaleString("en-PH");
   const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (c) =>
@@ -10,10 +10,9 @@
   let movements = [];
 
   async function api(method, path, body) {
-    const me = BBNav.getSessionUser() || {};
-    const response = await fetch(API + path, {
+    const response = await BBAPI.fetch(API + path, {
       method,
-      headers: { "X-Username": me.u || "", ...(body ? { "Content-Type": "application/json" } : {}) },
+      headers: { ...(body ? { "Content-Type": "application/json" } : {}) },
       body: body ? JSON.stringify(body) : undefined
     });
     const data = await response.json().catch(() => null);

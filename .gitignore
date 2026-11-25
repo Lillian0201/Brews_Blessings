@@ -2,4 +2,6 @@
 .venv/
 __pycache__/
 backend/venv/backend/test_results_*
+/.vercel/
+/dist/
 backend/test_results_*

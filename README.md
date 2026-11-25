@@ -1,12 +1,13 @@
 # Brews & Blessings
 
-## Run the local backend on Windows
+Brews & Blessings uses a static HTML/CSS/JavaScript frontend and a modular
+FastAPI backend backed by PostgreSQL. The frontend calls `/api` on the deployed
+site; local browser development calls the API on `127.0.0.1:5001`.
 
-The frontend calls the FastAPI backend at `http://127.0.0.1:5001/api`. Keep the
-API terminal running while using the app.
+## Local development
 
-1. Install Python 3.10+ and PostgreSQL.
-2. Create `backend/.env` with the local database settings:
+1. Install Python 3.10+ and PostgreSQL. Create `backend/.env` with local
+   database settings:
 
    ```dotenv
    DB_HOST=127.0.0.1
@@ -15,46 +16,101 @@ API terminal running while using the app.
    DB_USER=postgres
    DB_PASSWORD=your_local_postgres_password
    DB_ADMIN_NAME=postgres
-
-   # Optional local development settings.
    BB_OWNER_PASSWORD=owner123
    BB_BARISTA_PASSWORD=barista123
+   BB_COOKIE_SECURE=false
    BB_AUTO_BOOTSTRAP=true
    BB_SEED_SAMPLE_DATA=true
    ```
 
-   `.env` is ignored by Git. Replace the example database password and set
-   private account passwords on your device.
+   `.env` is ignored by Git. Use private passwords on any non-local system.
 
-3. Create a virtual environment and install dependencies with uv:
+2. In a terminal, install dependencies and start the API:
 
    ```powershell
    cd "<project folder>\backend"
    uv sync
-   ```
-
-4. Start the API:
-
-   ```powershell
    uv run python main.py
    ```
 
-   Startup automatically creates the configured database when needed, applies
-   SQL migrations once, and seeds products, owner/barista accounts, and optional
-   sample transactions. Set `BB_AUTO_BOOTSTRAP=false` to disable startup setup.
-   Set `BB_SEED_SAMPLE_DATA=false` to skip sample transactions.
+   The local API applies schema migrations and seeds products, users, and
+   optional sample transactions at startup.
 
-   Open `http://127.0.0.1:5001/api/health`; it should return `{"status":"ok"}`.
-   Open the frontend by launching `Login Page/Login.html` in a browser and sign
-   in with the local account you seeded.
+3. In a second terminal, serve the frontend instead of opening the HTML files
+   directly. This lets the browser use the session cookie correctly:
 
-## Current API coverage
+   ```powershell
+   cd "<project folder>"
+   py -m http.server 5500 --bind 127.0.0.1
+   ```
 
-Login, Settings, Expense, and Transactions pages call the Flask API. POS,
-Inventory, and Dashboard currently keep their data in browser storage, even
-though backend endpoints for those modules are present. Those screens need
-frontend integration before their data is shared with PostgreSQL.
+   Open `http://127.0.0.1:5500/`. The root page redirects to the login page.
+   The API health check is `http://127.0.0.1:5001/api/health`.
 
-The API currently identifies requests with an `X-Username` header. This is
-adequate only for local development; it is not secure authentication for a
-public deployment.
+## Docker
+
+The backend image uses the pinned `uv.lock` dependencies and listens on the
+port supplied through `PORT` (80 by default, matching Vercel's container
+runtime). From `backend/`:
+
+```powershell
+docker build -t brews-blessings-api .
+docker run --rm -p 5001:80 --env-file .env -e BB_COOKIE_SECURE=false brews-blessings-api
+```
+
+For a local PostgreSQL database outside Docker, use `host.docker.internal` for
+`DB_HOST`. A Supabase `DATABASE_URL` can also be supplied to the container.
+
+## Vercel + Supabase deployment
+
+`vercel.json` defines two Vercel Services: a static frontend build and a
+containerized FastAPI backend. Vercel routes `/api/*` to the backend and all
+other paths to the frontend. Vercel Services are currently a Beta feature; the
+container runs as a stateless, autoscaling web service, not a persistent Docker
+host.
+
+1. Import this repository into Vercel and enable Vercel Services for the
+   project. Keep the project root at this repository's root.
+2. In Vercel's production environment variables, set:
+
+   - `DATABASE_URL`: the Supabase **transaction-pooler** PostgreSQL URL. Do not
+     commit it or use a direct database URL for the serverless app.
+   - `BB_AUTO_BOOTSTRAP=false`: schema changes must be applied separately;
+     startup bootstrap uses session-level advisory locks.
+   - `BB_COOKIE_SECURE=true`: require HTTPS for the authentication cookie.
+   - Optionally set `BB_SESSION_TTL_HOURS` (defaults to `8`).
+
+   Same-origin frontend/API requests do not need a production CORS allowlist.
+   If you later host the frontend on a different origin, set
+   `BB_CORS_ORIGINS` to the exact comma-separated frontend origins.
+
+3. Apply the schema and existing migrations to a new Supabase database in this
+   order: `backend/schema.sql`, then
+   `backend/migrations/001_transactions.sql`,
+   `backend/migrations/002_inventory_pos.sql`, and
+   `backend/migrations/003_auth_sessions.sql`. If the existing database already
+   has the prior schema and migrations, apply only
+   `003_auth_sessions.sql`.
+4. For a new database, run `backend/seed_products.sql` in Supabase's SQL
+   Editor. Create initial accounts from a trusted machine: set `DATABASE_URL`,
+   `BB_OWNER_PASSWORD`, and `BB_BARISTA_PASSWORD` as environment variables,
+   then run `uv run python seed_users.py` from `backend/`. Use strong, unique
+   passwords; never use the local example passwords in a public deployment.
+5. Deploy the repository from Vercel. Verify `/api/health`, then sign in at the
+   deployment's root URL. The login API creates a revocable PostgreSQL session
+   and returns it in an HttpOnly, Secure, SameSite=Strict cookie. The browser
+   never sends a user identity header; each protected API request validates the
+   session and current account status in PostgreSQL.
+
+## API tests
+
+With the backend running and seeded accounts available, run:
+
+```powershell
+cd "<project folder>\backend"
+$env:BB_OWNER_PASSWORD = "your-owner-password"
+$env:BB_BARISTA_PASSWORD = "your-barista-password"
+uv run python api_tests.py
+```
+
+The test runner logs in with these accounts and reuses their session cookies.

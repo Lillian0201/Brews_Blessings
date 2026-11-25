@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const API = "http://127.0.0.1:5001/api";
+  const API = BBAPI.base;
   const me = BBNav.requireLogin();
   if (!me) return;
   if (!BBNav.canSee(me.role, "dash")) {
@@ -18,9 +18,7 @@
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
   async function api(path) {
-    const response = await fetch(API + path, {
-      headers: { "X-Username": me.u || "" }
-    });
+    const response = await BBAPI.fetch(API + path);
     const data = await response.json().catch(() => null);
     if (!response.ok) throw new Error((data && data.detail) || `Server error (${response.status}).`);
     return data;
@@ -106,7 +104,7 @@
       </div>`;
     } catch (error) {
       app.innerHTML = `<main><h1>Dashboard</h1>
-        <div class="warn">${esc(error.message)} Backend: http://127.0.0.1:5001/api</div></main>`;
+        <div class="warn">${esc(error.message)}</div></main>`;
     }
   }
 

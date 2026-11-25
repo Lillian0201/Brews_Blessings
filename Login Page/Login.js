@@ -1,5 +1,4 @@
-// Login through the local Flask API. Keep the URL in sync with backend/app.py.
-const API = 'http://127.0.0.1:5001/api';
+const API = BBAPI.base;
 const DASHBOARD = '../Dashboard/Dashboard.html';
 const card = document.getElementById('lf');
 const btn = card.querySelector('.go');
@@ -8,7 +7,21 @@ const err = document.getElementById('err');
 const note = document.getElementById('notice');
 const pw = form.p;
 
-if (sessionStorage.me) location.replace(DASHBOARD);
+BBAPI.fetch(`${API}/me`).then(async response => {
+  if (!response.ok) {
+    sessionStorage.removeItem('me');
+    return;
+  }
+  const user = await response.json();
+  sessionStorage.me = JSON.stringify({
+    u: user.username,
+    name: user.fullname,
+    role: user.role
+  });
+  location.replace(DASHBOARD);
+}).catch(error => {
+  console.error('Unable to verify the existing session:', error);
+});
 
 const msg = sessionStorage.notice;
 if (msg) {
@@ -39,7 +52,7 @@ form.addEventListener('submit', async event => {
   btn.disabled = true;
   btn.textContent = 'Logging in...';
   try {
-    const response = await fetch(`${API}/login`, {
+    const response = await BBAPI.fetch(`${API}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
@@ -60,7 +73,7 @@ form.addEventListener('submit', async event => {
     });
     location.href = DASHBOARD;
   } catch (error) {
-    fail('Cannot reach the local backend. Start it from the backend folder and try again.');
+    fail('Cannot reach the server. Check your connection and try again.');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Log in';

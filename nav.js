@@ -104,9 +104,20 @@
     return (first && PAGES[first]) || PAGES.orders;
   }
 
-  function logout() {
-    sessionStorage.removeItem('me');
-    location.replace(LOGIN_URL);
+  async function logout(notice) {
+    try {
+      const response = await BBAPI.fetch(`${BBAPI.base}/logout`, { method: 'POST' });
+      if (!response.ok) {
+        throw new Error(`Logout failed with server error (${response.status}).`);
+      }
+    } catch (error) {
+      console.error('Could not revoke the server session:', error);
+      notice = notice || 'The server could not end your session; it will expire automatically.';
+    } finally {
+      sessionStorage.removeItem('me');
+      if (notice) sessionStorage.notice = notice;
+      location.replace(LOGIN_URL);
+    }
   }
 
   // ---------- Auto-logout after inactivity ----------
@@ -116,9 +127,7 @@
   function resetIdle() {
     clearTimeout(idleTimer);
     idleTimer = setTimeout(() => {
-      sessionStorage.removeItem('me');
-      sessionStorage.notice = 'You were logged out after 10 minutes of inactivity.';
-      location.replace(LOGIN_URL);
+      logout('You were logged out after 10 minutes of inactivity.');
     }, IDLE_MS);
   }
 
