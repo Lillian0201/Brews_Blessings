@@ -8,7 +8,7 @@
   const API = "http://127.0.0.1:5001/api";
   const $ = (id) => document.getElementById(id);
   const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
-  const peso = (n) => "₱" + round2(n).toLocaleString("en-PH", {
+  const peso = (n) => "\u20B1" + round2(n).toLocaleString("en-PH", {
     minimumFractionDigits: Number.isInteger(round2(n)) ? 0 : 2,
     maximumFractionDigits: 2
   });
@@ -208,7 +208,7 @@
     $("discHint").textContent = totalsValue.discount > 0 ? "− " + peso(totalsValue.discount) : "";
     const tendered = parseFloat($("tendered").value);
     if (!cart.length || $("tendered").value.trim() === "" || !isFinite(tendered)) {
-      $("change").textContent = "Change: ₱0";
+      $("change").textContent = "Change: " + "\u20B1" + "0";
       $("change").classList.remove("short");
     } else if (tendered >= totalsValue.total) {
       $("change").textContent = "Change: " + peso(tendered - totalsValue.total);
@@ -288,9 +288,9 @@
   }
 
   $("payBtn").addEventListener("click", placeOrder);
-  $("cancelBtn").addEventListener("click", () => {
+  $("cancelBtn").addEventListener("click", async () => {
     const dirty = cart.length || $("customer").value.trim();
-    if (dirty && !confirm("Clear this order?")) return;
+    if (dirty && !(await BBDialog.confirm("Clear this order?", "The current order will be cleared."))) return;
     resetForm();
   });
 
@@ -356,8 +356,17 @@
     const status = button.dataset.status;
     let reason;
     if (status === "Cancelled") {
-      reason = prompt("Reason for cancelling:");
-      if (!reason || !reason.trim()) return;
+      reason = await BBDialog.ask("Cancel order", {
+        label: "Reason for cancelling",
+        placeholder: "Enter a reason",
+        okText: "Continue"
+      });
+      if (reason === null) return;
+      if (!reason.trim()) {
+        await BBDialog.notify("Missing reason", "Enter a reason for cancelling the order.");
+        return;
+      }
+      reason = reason.trim();
     }
     try {
       await api("PATCH", `/orders/${viewing}/status`, { status, reason });

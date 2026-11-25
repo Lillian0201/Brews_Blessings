@@ -6,7 +6,7 @@
   const me = BBNav.mount('exp');
   if (!me) return;
 
-  const money = n => '₱' + (+n).toLocaleString('en-US', {
+  const money = n => '\u20B1' + (+n).toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   });
@@ -90,7 +90,7 @@
       document.getElementById('expDesc').value = '';
       await loadExpenses();
     } catch (err) {
-      alert(err.message);
+      await BBDialog.notify('Expense save failed', err.message);
     } finally {
       saveBtn.disabled = false;
     }
@@ -413,7 +413,7 @@
         if (recipes[name].category === cat) {
           const opt = document.createElement('option');
           opt.value = name;
-          opt.textContent = `${name} (₱${recipes[name].sellingPrice})`;
+          opt.textContent = `${name} (\u20B1${recipes[name].sellingPrice})`;
           optgroup.appendChild(opt);
         }
       });
@@ -474,8 +474,8 @@
     });
   });
 
-  saveCostingBtn.addEventListener('click', () => {
-    alert(`Product costing for ${productSelect.value} saved successfully!`);
+  saveCostingBtn.addEventListener('click', async () => {
+    await BBDialog.notify('Costing saved', `Product costing for ${productSelect.value} saved successfully!`);
   });
 
   // Init renders

@@ -10,7 +10,7 @@
   const CATEGORIES = ['Coffee', 'Non-Coffee', 'Refreshers'];
 
   const $ = id => document.getElementById(id);
-  const money = n => '₱' + (+n).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  const money = n => '\u20B1' + (+n).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
   // ---------- API ----------
@@ -113,13 +113,22 @@
 
   async function deleteProduct(p) {
     if (!p) return;
-    if (!confirm(`Delete ${p.name}? If it already has sales or stock, it will be marked Unavailable instead.`)) return;
+    if (!await BBDialog.confirm(
+      'Delete product?',
+      `Delete ${p.name}? If it already has sales or stock, it will be marked Unavailable instead.`,
+      { okText: 'Delete', danger: true }
+    )) return;
     try {
       const res = await api('DELETE', `/products/${p.id}`);
       await loadAll();
-      if (!res.deleted) alert(`${p.name} has sales or stock records, so it was marked Unavailable instead of deleted.`);
+      if (!res.deleted) {
+        await BBDialog.notify(
+          'Product unavailable',
+          `${p.name} has sales or stock records, so it was marked Unavailable instead of deleted.`
+        );
+      }
     } catch (err) {
-      alert(err.message);
+      await BBDialog.notify('Delete failed', err.message);
     }
   }
 
@@ -191,12 +200,16 @@
     if (!b) return;
     const u = users.find(x => String(x.id) === b.dataset.toggle);
     if (!u) return;
-    if (u.active && !confirm(`Deactivate ${u.name}? They won't be able to log in.`)) return;
+    if (u.active && !await BBDialog.confirm(
+      'Deactivate user?',
+      `Deactivate ${u.name}? They won't be able to log in.`,
+      { okText: 'Deactivate' }
+    )) return;
     try {
       await api('PUT', `/users/${u.id}`, { active: !u.active });
       await loadAll();
     } catch (err) {
-      alert(err.message);
+      await BBDialog.notify('User update failed', err.message);
     }
   });
 
@@ -233,7 +246,7 @@
   // ---------- Backup action ----------
   const btnBackup = $('btnBackupNow');
   const backupStatus = $('backupStatusText');
-  btnBackup.addEventListener('click', () => {
+  btnBackup.addEventListener('click', async () => {
     const now = new Date();
     const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     backupStatus.textContent = `Last Backup: ${dateStr}`;
@@ -247,7 +260,7 @@
     a.download = `brews_blessings_backup_${now.toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    alert('Backup generated and downloaded successfully!');
+    await BBDialog.notify('Backup complete', 'Backup generated and downloaded successfully!');
   });
 
   // ---------- Start ----------
