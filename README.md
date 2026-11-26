@@ -14,18 +14,14 @@ site; local browser development calls the API on `127.0.0.1:5001`.
    DB_PORT=5432
    DB_NAME=brews_blessings
    DB_USER=postgres
-   DB_PASSWORD=CHANGE_ME_DB_PASSWORD
+   DB_PASSWORD=your_local_postgres_password
    DB_ADMIN_NAME=postgres
-   BB_OWNER_PASSWORD=CHANGE_ME_OWNER_PASSWORD
-   BB_BARISTA_PASSWORD=CHANGE_ME_BARISTA_PASSWORD
    BB_COOKIE_SECURE=false
    BB_AUTO_BOOTSTRAP=true
    BB_SEED_SAMPLE_DATA=true
    ```
 
-   Replace the `CHANGE_ME_...` placeholders with private local values before
-   running the backend. `.env` is ignored by Git. Never use example passwords
-   in a public deployment.
+   `.env` is ignored by Git. Use private passwords on any non-local system.
 
 2. In a terminal, install dependencies and start the API:
 
@@ -35,11 +31,8 @@ site; local browser development calls the API on `127.0.0.1:5001`.
    uv run python main.py
    ```
 
-   The local API applies schema migrations and seeds products and optional
-   sample transactions at startup. User seeding is skipped unless both account
-   passwords are configured; existing accounts can still log in. To create or
-   reset the Owner and Barista passwords, set both variables in `.env` and run
-   `uv run python seed_users.py` from `backend/`.
+   The local API applies schema migrations and seeds products, users, and
+   optional sample transactions at startup.
 
 3. In a second terminal, serve the frontend instead of opening the HTML files
    directly. This lets the browser use the session cookie correctly:

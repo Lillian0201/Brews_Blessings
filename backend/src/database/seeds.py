@@ -8,15 +8,10 @@ def seed_products(cur) -> None:
 
 
 def seed_users(cur) -> None:
-    try:
-        users = (
-            ("Owner", "owner", get_env("BB_OWNER_PASSWORD")),
-            ("Barista", "barista", get_env("BB_BARISTA_PASSWORD")),
-        )
-    except RuntimeError as error:
-        print(f"Skipping user seeding: {error}")
-        return
-
+    users = (
+        ("Owner", "owner", get_env("BB_OWNER_PASSWORD", "owner123")),
+        ("Barista", "barista", get_env("BB_BARISTA_PASSWORD", "barista123")),
+    )
     for fullname, username, password in users:
         cur.execute(
             'INSERT INTO "User" (fullname, username, password, role, isactive) '
