@@ -9,8 +9,8 @@ def seed_products(cur) -> None:
 
 def seed_users(cur) -> None:
     users = (
-        ("Owner", "owner", get_env("BB_OWNER_PASSWORD", "owner123")),
-        ("Barista", "barista", get_env("BB_BARISTA_PASSWORD", "barista123")),
+        ("Owner", "owner", get_env("BB_OWNER_PASSWORD")),
+        ("Barista", "barista", get_env("BB_BARISTA_PASSWORD")),
     )
     for fullname, username, password in users:
         cur.execute(
