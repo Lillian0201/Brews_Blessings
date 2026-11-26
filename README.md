@@ -35,8 +35,11 @@ site; local browser development calls the API on `127.0.0.1:5001`.
    uv run python main.py
    ```
 
-   The local API applies schema migrations and seeds products, users, and
-   optional sample transactions at startup.
+   The local API applies schema migrations and seeds products and optional
+   sample transactions at startup. User seeding is skipped unless both account
+   passwords are configured; existing accounts can still log in. To create or
+   reset the Owner and Barista passwords, set both variables in `.env` and run
+   `uv run python seed_users.py` from `backend/`.
 
 3. In a second terminal, serve the frontend instead of opening the HTML files
    directly. This lets the browser use the session cookie correctly:
