@@ -14,16 +14,18 @@ site; local browser development calls the API on `127.0.0.1:5001`.
    DB_PORT=5432
    DB_NAME=brews_blessings
    DB_USER=postgres
-   DB_PASSWORD=your_local_postgres_password
+   DB_PASSWORD=CHANGE_ME_DB_PASSWORD
    DB_ADMIN_NAME=postgres
-   BB_OWNER_PASSWORD=owner123
-   BB_BARISTA_PASSWORD=barista123
+   BB_OWNER_PASSWORD=CHANGE_ME_OWNER_PASSWORD
+   BB_BARISTA_PASSWORD=CHANGE_ME_BARISTA_PASSWORD
    BB_COOKIE_SECURE=false
    BB_AUTO_BOOTSTRAP=true
    BB_SEED_SAMPLE_DATA=true
    ```
 
-   `.env` is ignored by Git. Use private passwords on any non-local system.
+   Replace the `CHANGE_ME_...` placeholders with private local values before
+   running the backend. `.env` is ignored by Git. Never use example passwords
+   in a public deployment.
 
 2. In a terminal, install dependencies and start the API:
 

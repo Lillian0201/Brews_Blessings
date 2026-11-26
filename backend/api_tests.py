@@ -44,8 +44,8 @@ BASE = os.environ.get("BB_API", "http://127.0.0.1:5001/api")
 USE_COLOR = "--no-color" not in sys.argv
 OWNER, BARISTA = "owner", "barista"
 PASSWORDS = {
-    OWNER: os.environ.get("BB_OWNER_PASSWORD", "owner123"),
-    BARISTA: os.environ.get("BB_BARISTA_PASSWORD", "barista123"),
+    OWNER: os.environ.get("BB_OWNER_PASSWORD", ""),
+    BARISTA: os.environ.get("BB_BARISTA_PASSWORD", ""),
 }
 OPENERS = {}
 AUTHENTICATED = set()
@@ -81,6 +81,8 @@ def opener_for(user):
 def authenticate(user):
     if user in AUTHENTICATED or user in AUTH_ATTEMPTED or user not in PASSWORDS:
         return
+    if not PASSWORDS[user]:
+        raise RuntimeError(f"Set BB_{user.upper()}_PASSWORD before running API tests.")
     AUTH_ATTEMPTED.add(user)
     data = json.dumps({"username": user, "password": PASSWORDS[user]}).encode("utf-8")
     req = urllib.request.Request(
