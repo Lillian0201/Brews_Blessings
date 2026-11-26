@@ -19,6 +19,23 @@ site; local browser development calls the API on `127.0.0.1:5001`.
    BB_COOKIE_SECURE=false
    BB_AUTO_BOOTSTRAP=true
    BB_SEED_SAMPLE_DATA=true
+
+   DEMO Login Credentials
+   Owner
+   user: owner
+   password: owner123
+
+   Barista 
+   user: barista
+   password: barista123
+
+   Barista2
+   user: barista2
+   password: barista456
+
+   Vercel Deployment Production Link
+   https://vercel.com/lillian20/brews-blessings
+
    ```
 
    `.env` is ignored by Git. Use private passwords on any non-local system.
