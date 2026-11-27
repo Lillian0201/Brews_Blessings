@@ -1,4 +1,4 @@
-// Settings Page Logic: products and users are saved in the database through the API.
+// Admin maintenance: products and users are saved in the database through the API.
 (function () {
   'use strict';
 

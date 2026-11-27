@@ -26,12 +26,14 @@
       ['orders', 'Order/POS'],
       ['inv', 'Inventory'],
       ['tx', 'Transactions'],
-      ['exp', 'Expense and Costing'],
-      ['settings', 'Settings (Owner)']
+      ['exp', 'Expense and Costing']
     ],
     Barista: [
       ['orders', 'Order/POS'],
       ['inv', 'Inventory']
+    ],
+    Admin: [
+      ['settings', 'System Maintenance']
     ]
   };
 
@@ -156,10 +158,9 @@
         <span>Brews &amp; Blessings</span>
       </div>
       <nav aria-label="Main">
-        ${nav.filter((n) => n[0] !== 'settings').map(item).join('')}
+        ${nav.map(item).join('')}
       </nav>
       <div class="foot">
-        ${nav.filter((n) => n[0] === 'settings').map(item).join('')}
         <button type="button" data-nav-out>${ico('out')}Log out</button>
       </div>
     </aside>`;

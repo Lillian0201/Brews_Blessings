@@ -111,7 +111,8 @@ host.
    migrations are required by the current product/POS API.
 4. For a new database, run `backend/seed_products.sql` in Supabase's SQL
    Editor. Create initial accounts from a trusted machine: set `DATABASE_URL`,
-   `BB_OWNER_PASSWORD`, and `BB_BARISTA_PASSWORD` as environment variables,
+   `BB_OWNER_PASSWORD`, `BB_BARISTA_PASSWORD`, and (to provision the first
+   Admin account) `BB_ADMIN_PASSWORD` as environment variables,
    then run `uv run python seed_users.py` from `backend/`. Use strong, unique
    passwords; never use the local example passwords in a public deployment.
 5. Deploy the repository from Vercel. Verify `/api/health`, then sign in at the
