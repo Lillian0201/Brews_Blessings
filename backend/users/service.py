@@ -53,7 +53,7 @@ def add_user_service(cur, owner: dict, body: dict | None) -> tuple[dict, int]:
         raise ApiError(422, "Username must be 3 to 45 letters, numbers, dots, dashes or underscores.")
     role = body.get("role")
     if role not in ROLES:
-        raise ApiError(422, "Role must be Owner or Barista.")
+        raise ApiError(422, "Role must be Owner, Barista, or Admin.")
     password = str(body.get("password") or "")
     if len(password) < 6:
         raise ApiError(422, "Password must be at least 6 characters.")
@@ -73,7 +73,7 @@ def update_user_service(cur, owner: dict, user_id: int, body: dict | None) -> di
     name = clean_text(body["name"], "Full name") if "name" in body else target["name"]
     role = body["role"] if "role" in body else target["role"]
     if role not in ROLES:
-        raise ApiError(422, "Role must be Owner or Barista.")
+        raise ApiError(422, "Role must be Owner, Barista, or Admin.")
     active = bool(body["active"]) if "active" in body else target["active"]
     if user_id == owner["userid"] and not active:
         raise ApiError(409, "You can't deactivate your own account.")

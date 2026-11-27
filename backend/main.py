@@ -30,8 +30,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Brews & Blessings API", lifespan=lifespan)
 default_origins = "" if os.getenv("VERCEL") == "1" else (
-    "null,http://127.0.0.1:5500,http://localhost:5500,"
-    "http://127.0.0.1:8000,http://localhost:8000"
+    "http://127.0.0.1:5501,http://localhost:5501"
 )
 cors_origins = [
     origin.strip()

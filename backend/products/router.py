@@ -10,7 +10,7 @@ from products.service import (
     list_product_response,
     update_product_service,
 )
-from src.core.dependencies import get_current_user, require_owner
+from src.core.dependencies import get_current_user, require_admin_or_owner
 from src.database.connection import get_cursor
 
 
@@ -31,7 +31,7 @@ def list_products_endpoint(
 def add_product_endpoint(
     body: Annotated[Any, Body()] = None,
     cur: Annotated[RealDictCursor, Depends(get_cursor)] = None,
-    user: dict = Depends(require_owner),
+    user: dict = Depends(require_admin_or_owner),
 ) -> dict:
     response, status = add_product_service(cur, user, body)
     return JSONResponse(status_code=status, content=response)
@@ -42,7 +42,7 @@ def update_product_endpoint(
     product_id: int,
     body: Annotated[Any, Body()] = None,
     cur: Annotated[RealDictCursor, Depends(get_cursor)] = None,
-    user: dict = Depends(require_owner),
+    user: dict = Depends(require_admin_or_owner),
 ) -> dict:
     return update_product_service(cur, user, product_id, body)
 
@@ -51,6 +51,6 @@ def update_product_endpoint(
 def delete_product_endpoint(
     product_id: int,
     cur: Annotated[RealDictCursor, Depends(get_cursor)] = None,
-    user: dict = Depends(require_owner),
+    user: dict = Depends(require_admin_or_owner),
 ) -> dict:
     return delete_product_service(cur, user, product_id)

@@ -1,7 +1,7 @@
 from typing import TypedDict
 
 
-ROLES = ("Owner", "Barista")
+ROLES = ("Owner", "Barista", "Admin")
 
 
 class UserRow(TypedDict, total=False):

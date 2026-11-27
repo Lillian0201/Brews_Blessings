@@ -37,3 +37,13 @@ def require_owner(
     if user["role"] != "Owner":
         raise ApiError(403, "Only the Owner can do this.")
     return user
+
+
+def require_admin_or_owner(
+    request: Request,
+    cur: Annotated[RealDictCursor, Depends(get_cursor)],
+) -> dict:
+    user = get_current_user(request, cur)
+    if user["role"] not in ("Owner", "Admin"):
+        raise ApiError(403, "Only an Admin or Owner can do this.")
+    return user

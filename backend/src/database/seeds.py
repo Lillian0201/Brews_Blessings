@@ -8,10 +8,15 @@ def seed_products(cur) -> None:
 
 
 def seed_users(cur) -> None:
-    users = (
+    users = [
         ("Owner", "owner", get_env("BB_OWNER_PASSWORD", "owner123")),
         ("Barista", "barista", get_env("BB_BARISTA_PASSWORD", "barista123")),
-    )
+    ]
+    # Set BB_ADMIN_PASSWORD to provision the first Admin account. Once one
+    # exists, Admin accounts can be managed from System Maintenance.
+    admin_password = get_env("BB_ADMIN_PASSWORD", "")
+    if admin_password:
+        users.append(("Admin", "admin", admin_password))
     for fullname, username, password in users:
         cur.execute(
             'INSERT INTO "User" (fullname, username, password, role, isactive) '
